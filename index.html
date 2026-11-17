@@ -1627,11 +1627,48 @@ addEventListener("hashchange",()=>peekFor(location.hash.slice(1)));
 const ROLE=/^#elodie/.test(location.hash)?"telefoon":"scherm";
 const PAIR=(location.hash.match(/^#elodie-([a-z0-9]{4,8})$/)||[])[1]||null;
 const capP=n=>(window.claude&&window.claude.use)?window.claude.use(n):Promise.resolve(null);
-const roomP=IN_CLAUDE?capP("room"):peerRoom(),dictP=IN_CLAUDE?capP("dictation"):webSpeech();
+const roomP=IN_CLAUDE?capP("room"):relayRoom().then(r=>r||peerRoom()),dictP=IN_CLAUDE?capP("dictation"):webSpeech();
 let pair=null,deskHere=false,deskScherm="",phoneSaid=new Set();
 
 /* ---------- losse site (GitHub Pages): koppeling via PeerJS, spraak via de browser ---------- */
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+/* Koppeling via een openbare MQTT-server (werkt ook op schoolwifi en mobiele data, zonder rechtstreekse verbinding tussen de toestellen). */
+async function relayRoom(){
+  await null;
+  const code=ROLE==="scherm"?DESK_CODE:PAIR;if(!code)return null;
+  try{if(typeof mqtt==="undefined")await loadScript("lib/mqtt.min.js")}catch(e){return null}
+  if(typeof mqtt==="undefined")return null;
+  const T=r=>"momu-elodie/v1/"+code+"/"+r,mine=T(ROLE),theirs=T(ROLE==="scherm"?"telefoon":"scherm");
+  const BROKERS=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt","wss://test.mosquitto.org:8081/mqtt"];
+  let client=null;
+  for(const url of BROKERS){
+    client=await new Promise(res=>{
+      let c;try{c=mqtt.connect(url,{connectTimeout:6000,reconnectPeriod:0,clean:true,clientId:"momu_"+Math.random().toString(16).slice(2,12)})}catch(e){return res(null)}
+      const t=setTimeout(()=>{try{c.end(true)}catch(e){}res(null)},7000);
+      c.once("connect",()=>{clearTimeout(t);res(c)});
+      c.once("error",()=>{clearTimeout(t);try{c.end(true)}catch(e){}res(null)});
+    });
+    if(client)break;
+  }
+  if(!client)return null;
+  client.options.reconnectPeriod=2000;
+  const self={},handlers=[];let other=null,otherAt=0;
+  const snap=()=>[{sameTab:true,isMe:true,presence:{...self},updatedAt:Date.now()}].concat(other?[{sameTab:false,isMe:false,presence:other,updatedAt:otherAt}]:[]);
+  const fire=()=>{const ps=snap();handlers.forEach(h=>{try{h({peers:ps,joined:[],left:[],updated:[]})}catch(e){}})};
+  const send=()=>{try{client.publish(mine,JSON.stringify({t:Date.now(),p:self}),{retain:true,qos:0})}catch(e){}};
+  client.on("message",(t,buf)=>{
+    if(t!==theirs)return;let d=null;try{const txt=buf.toString();d=txt?JSON.parse(txt):null}catch(e){}
+    if(d&&d.p&&typeof d.p==="object"){other=d.p;otherAt=Date.now()}else other=null;
+    fire();
+  });
+  client.on("connect",()=>{client.subscribe(theirs);send()});
+  client.subscribe(theirs);
+  addEventListener("pagehide",()=>{try{client.publish(mine,"",{retain:true,qos:0})}catch(e){}});
+  return {
+    presence:async patch=>{for(const k in patch){if(patch[k]===null)delete self[k];else self[k]=patch[k]}fire();send()},
+    onPeers:h=>{handlers.push(h);setTimeout(()=>h({peers:snap(),joined:[],left:[],updated:[]}),0);return()=>{}}
+  };
+}
 async function peerRoom(){
   await null;
   try{if(typeof Peer!=="function")await loadScript("lib/peerjs.min.js")}catch(e){return null}
