@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make it seamlessly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Golos+Text:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* Layout volgens het Figma-baseplan: wit, zwart, grijze vlakken, Golos Text. Eén scherm per stap. */
+:root{
+  --bg:#ffffff;
+  --ink:#000000;
+  --grey:#d9d9d9;
+  --soft:#f0f0f0;
+  --muted:#555555;
+  --font:"Golos Text", "Helvetica Neue", Arial, sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-weight:400}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--ink);outline-offset:4px}
+.screen{display:none;min-height:100%}
+.screen.on{display:block}
+.page{max-width:1320px;margin:0 auto;padding:40px 32px 80px}
+@media (max-width:760px){.page{padding:22px 16px 60px}}
+.back{background:none;border:0;padding:8px 0;font-size:17px;display:inline-flex;gap:8px;align-items:center;color:var(--ink)}
+.back:hover{text-decoration:underline;text-underline-offset:4px}
+h1,h2,h3{font-weight:500;margin:0;text-wrap:balance}
+
+/* stiksel dat rondloopt bij hover (treintje) */
+.stitch{position:relative;background:none;border:0}
+.stitch::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(90deg,#000 50%,transparent 50%),linear-gradient(90deg,#000 50%,transparent 50%),linear-gradient(0deg,#000 50%,transparent 50%),linear-gradient(0deg,#000 50%,transparent 50%);
+  background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;background-size:14px 2px,14px 2px,2px 14px,2px 14px;background-position:0 0,0 100%,0 0,100% 0;opacity:0;transition:opacity .2s}
+.stitch:hover::after,.stitch:focus-visible::after{opacity:1;animation:treintje .5s linear infinite}
+@keyframes treintje{to{background-position:14px 0,-14px 100%,0 -14px,100% 14px}}
+
+/* ---------- 1. Start ---------- */
+#start .center{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(40px,8vh,110px);padding:24px;text-align:center}
+#start h1{font-size:clamp(46px,8.4vw,126px);line-height:1.05;letter-spacing:-.01em}
+.startbtn{font-size:clamp(34px,4.7vw,70px);padding:10px 34px;letter-spacing:.02em}
+
+/* ---------- 3. Categorie scrollen ---------- */
+.cat-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 24px;margin:12px 0 36px}
+.cat-head h1{font-size:clamp(40px,5.5vw,76px)}
+.cat-head p{margin:0;color:var(--muted);font-size:17px}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:40px 52px}
+@media (max-width:1000px){.cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:32px 28px}}
+@media (max-width:640px){.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 14px}}
+.card{background:none;border:0;padding:0;text-align:left;display:flex;flex-direction:column;gap:10px}
+.card .ph{position:relative;aspect-ratio:214/294;background:var(--grey);overflow:hidden}
+.card .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:12px;mix-blend-mode:multiply;transition:transform .35s ease}
+.card:hover .ph img{transform:scale(1.04)}
+.card .t{font-size:16px;line-height:1.35}
+.card .badge{position:absolute;left:10px;top:10px;background:var(--ink);color:#fff;font-size:12px;padding:4px 8px;font-weight:500}
+
+/* ---------- 4. Het gekozen stuk ---------- */
+.piece{display:grid;grid-template-columns:minmax(0,504fr) minmax(0,424fr) minmax(0,285fr);gap:72px;align-items:start;margin-top:22px}
+@media (max-width:1000px){.piece{grid-template-columns:1fr 1fr;gap:28px}}
+@media (max-width:640px){.piece{grid-template-columns:1fr}}
+.bigphoto{position:relative;aspect-ratio:504/718;background:var(--grey)}
+.bigphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:22px;mix-blend-mode:multiply}
+.desc{background:var(--grey);padding:30px 28px;margin-top:20px;display:flex;flex-direction:column;gap:14px}
+.desc h1{font-size:clamp(28px,2.8vw,40px);line-height:1.12}
+.desc .meta{font-size:14px;color:#333}
+.desc p{margin:0;font-size:17px;line-height:1.6}
+.desc .parts{display:flex;flex-wrap:wrap;gap:6px}
+.desc .parts span{background:#fff;padding:4px 10px;font-size:13px}
+.side{display:flex;flex-direction:column;justify-content:flex-end;min-height:100%}
+.sticker{width:min(285px,100%);aspect-ratio:1;border-radius:50%;background:var(--grey);border:0;display:grid;place-items:center;font-size:clamp(26px,2.6vw,38px);line-height:1.15;transition:background-color .25s ease, color .25s ease, transform .4s ease;margin-top:auto}
+.sticker span{transform:rotate(-11.4deg);display:block}
+.sticker:hover,.sticker:focus-visible{background:var(--ink);color:#fff;transform:rotate(8deg)}
+.sticker.stitch::after{border-radius:50%;inset:14px;background:none;border:2px dashed currentColor;opacity:.6}
+.sticker.stitch:hover::after{animation:spin 6s linear infinite;opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:1000px){.side{grid-column:1/-1;align-items:center}.sticker{width:220px}}
+
+/* ---------- 5. Opmeten ---------- */
+.measure{display:grid;grid-template-columns:minmax(0,504fr) minmax(0,760fr);gap:64px;align-items:start;margin-top:22px}
+@media (max-width:1000px){.measure{grid-template-columns:1fr;gap:32px}}
+.cam{position:relative;width:100%;aspect-ratio:504/718;background:var(--grey);overflow:hidden}
+.cam video,.cam canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);background:#000}
+.cam canvas{background:transparent}
+.camstart{position:absolute;inset:0;border:0;background:transparent;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:0 16px 24px;text-align:center;gap:6px}
+.camstart span{font-size:clamp(22px,2.4vw,32px);line-height:1.2}
+.camstart small{font-size:15px;color:#333;border-bottom:1px solid #333}
+.camstart:hover small{color:#000;border-color:#000}
+.camstatus{position:absolute;left:12px;right:12px;top:12px;margin:0;background:#000;color:#fff;padding:10px 14px;font-size:15px;line-height:1.4;z-index:2}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(90px,14vw,180px);font-weight:600;color:#fff;text-shadow:0 0 18px rgba(0,0,0,.6);pointer-events:none;z-index:2}
+.camctl{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.ctl{background:#fff;border:1px solid #000;padding:10px 14px;font-size:15px}
+.ctl:hover{background:#000;color:#fff}
+.sl label small{color:var(--muted);font-size:13px}
+.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.cam svg.over{position:absolute;inset:0;width:100%;height:100%}
+.cam .camlabel{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:clamp(20px,2.4vw,30px);line-height:1.25;padding:0 16px}
+.cam .camlabel small{display:block;font-size:14px;color:#333;margin-top:6px}
+.cam.busy::after{content:"Ik neem je maten…";position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.75);font-size:24px}
+.camnote{font-size:13px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.sliders{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.sl label{font-size:16px}
+.sl output{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.sl input{grid-column:1/-1;width:100%;accent-color:#000}
+.sl.flash output{animation:flash .9s ease}
+@keyframes flash{0%{background:#000;color:#fff}100%{background:transparent}}
+.msg{font-size:15px;line-height:1.5;margin:12px 0 0;padding:10px 12px;background:var(--soft)}
+.msg:empty{display:none}
+.patterns h2{font-size:clamp(26px,2.6vw,38px);margin-bottom:16px}
+.patterns .sub{margin:-6px 0 18px;color:var(--muted);font-size:15px;line-height:1.5}
+.ptiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 22px}
+@media (max-width:640px){.ptiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
+.ptile{background:var(--grey);display:flex;flex-direction:column}
+.ptile .art{aspect-ratio:235/190;background:var(--soft);background-image:linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px);background-size:10px 10px;display:grid;place-items:center;padding:8px}
+.ptile .art svg{height:100%;width:auto;max-width:100%}
+.fitg{transform-box:view-box;transform-origin:100px 128px;transition:transform .35s ease}
+.ptile .cap{padding:10px 12px 12px;display:flex;flex-direction:column;gap:2px}
+.ptile .cap b{font-weight:500;font-size:15px}
+.ptile .cap span{font-size:13px;color:#333;font-variant-numeric:tabular-nums}
+.ptile .cap .size{font-size:15px;color:#000;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);margin-top:14px}
+.legend i{display:inline-block;width:24px;height:0;vertical-align:middle;margin-right:6px}
+.next{margin-top:30px;font-size:clamp(22px,2.4vw,32px);padding:16px 26px;background:var(--ink);color:#fff;border:0;display:inline-flex;gap:12px;align-items:center}
+.next:hover{background:#222}
+.loading{display:flex;align-items:center;gap:12px;font-size:17px;padding:24px 0}
+.spin{width:20px;height:20px;border:3px solid #ccc;border-top-color:#000;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+
+/* ---------- 6. How-to ---------- */
+.howtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,477px);gap:56px;align-items:start;margin-top:22px}
+@media (max-width:900px){.howtop{grid-template-columns:1fr;gap:28px}}
+.intro{display:grid;grid-template-columns:150px 1fr;gap:24px;align-items:start}
+@media (max-width:520px){.intro{grid-template-columns:100px 1fr}}
+.intro .thumb{aspect-ratio:3/4;background:var(--grey);position:relative}
+.intro .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:8px;mix-blend-mode:multiply}
+.intro h1{font-size:clamp(30px,3.4vw,48px);line-height:1.08;margin-bottom:12px}
+.intro p{margin:0 0 12px;font-size:16.5px;line-height:1.6}
+.level{display:flex;align-items:center;gap:6px;font-size:15px;margin:0 0 14px}
+.level svg{width:20px;height:20px}
+.mymeasures{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.mymeasures span{background:var(--soft);padding:5px 10px;font-size:13.5px}
+.mats{background:var(--grey);padding:30px 30px 26px;min-height:380px}
+.mats h2{font-size:30px;margin-bottom:18px}
+.mats .fabric{background:#fff;padding:14px 16px;margin-bottom:16px;font-size:15px;line-height:1.45}
+.mats .fabric b{font-size:34px;font-weight:600;display:block;line-height:1.1;margin:2px 0 4px}
+.mats .fabric .fl{display:block;font-size:14px;color:var(--muted)}
+/* polaroid rond het camerabeeld */
+.pola{background:#fff;padding:14px 14px 0;box-shadow:0 2px 4px rgba(0,0,0,.12),0 14px 34px rgba(0,0,0,.2);transform:rotate(-1.2deg)}
+.pola-cap{display:block;height:64px;line-height:64px;text-align:center;font-size:18px}
+/* download */
+.dlrow{margin-top:22px}
+.dl{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #000;padding:13px 18px;font-size:17px}
+.dl svg{width:22px;height:22px}
+.dl:hover:not(:disabled){background:#000;color:#fff}
+.dl:disabled{cursor:progress;opacity:.8}
+.dl .spin{width:16px;height:16px;border-width:2px}
+.dlmsg{margin:8px 0 0;font-size:14px;color:var(--muted);line-height:1.5}
+.dlmsg:empty{display:none}
+/* ronde knop naar het stappenplan, rechtsonder */
+#meten .page{padding-bottom:230px}
+.tohow{position:fixed;right:30px;bottom:30px;z-index:20;width:190px;height:190px;border-radius:50%;background:var(--grey);border:0;display:grid;place-items:center;font-size:22px;line-height:1.2;box-shadow:0 8px 24px rgba(0,0,0,.18);transition:background-color .25s ease,color .25s ease,transform .4s ease}
+.tohow span{display:block;transform:rotate(-11.4deg)}
+.tohow b{font-weight:400}
+.tohow::after{content:"";position:absolute;inset:13px;border-radius:50%;border:2px dashed currentColor;opacity:.5;pointer-events:none}
+.tohow:hover,.tohow:focus-visible{background:#000;color:#fff;transform:rotate(8deg)}
+.tohow:hover::after{opacity:1;animation:spin 6s linear infinite}
+@media (max-width:640px){.tohow{width:128px;height:128px;font-size:15px;right:16px;bottom:16px}.tohow::after{inset:9px}#meten .page{padding-bottom:170px}}
+.mats ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.mats li{display:flex;gap:10px;align-items:flex-start;font-size:16px;line-height:1.4}
+.mats li::before{content:"";width:16px;height:16px;border:2px solid #000;flex-shrink:0;margin-top:2px}
+.embprev{margin-top:28px;background:var(--soft);padding:18px 18px 16px}
+.embprev h3{font-size:20px;margin:0 0 12px}
+.embprev p{margin:10px 0 0;font-size:15px;line-height:1.5}
+.chartbox{background:#161616;padding:10px;display:flex;justify-content:center;overflow-x:auto}
+.chartbox.light{background:#fff;padding:0}
+.chartbox svg{max-width:100%;height:auto;max-height:420px}
+.drawbox{background:#161616;display:flex;justify-content:center}
+.drawbox svg{width:100%;max-width:340px;height:auto}
+.threads{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px}
+.threads li{display:flex;align-items:center;gap:7px}
+.threads i{width:16px;height:16px;border:1px solid #000;flex-shrink:0}
+.threads span{color:var(--muted)}
+.embprev.haak{display:grid;grid-template-columns:minmax(0,200px) 1fr;gap:20px;align-items:center}
+@media (max-width:520px){.embprev.haak{grid-template-columns:1fr}}
+.hat svg{width:100%;height:auto;display:block}
+.nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 0}
+.nums div{background:#fff;padding:10px 12px}
+.nums dt{font-size:13px;color:var(--muted)}
+.nums dd{margin:2px 0 0;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.embbox{background:var(--grey);padding:36px clamp(18px,4vw,56px) 40px;margin-top:56px}
+.embbox h2{font-size:clamp(28px,3vw,40px)}
+.embhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+.views{display:flex;border:1.5px solid #000}
+.view{background:#fff;border:0;padding:10px 16px;font-size:15px}
+.view.on{background:#000;color:#fff}
+.threads .sym{font-weight:600;width:14px;text-align:center}
+.haakgrid .hat{max-width:220px;margin-bottom:14px}
+.emb-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;align-items:start}
+@media (max-width:820px){.emb-grid{grid-template-columns:1fr}}
+.emb-grid p{margin:0 0 12px;font-size:16.5px;line-height:1.6}
+.emb-grid .small{font-size:14px;color:var(--muted)}
+.emb-grid .threads{flex-direction:column;gap:10px;font-size:15.5px}
+.chartbox.big svg{max-height:720px;width:100%}
+.drawbox.big svg{max-width:460px}
+.hat.big{max-width:340px}
+.plan{background:var(--grey);padding:40px clamp(18px,4vw,56px) 48px;margin-top:56px}
+.plan-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:22px}
+.plan-head h2{font-size:clamp(28px,3vw,40px)}
+.progress{display:flex;align-items:center;gap:12px;font-size:15px;font-variant-numeric:tabular-nums}
+.bar{width:180px;height:8px;background:#fff}
+.bar i{display:block;height:100%;background:#000;transition:width .3s ease}
+.made{font-size:16.5px;line-height:1.65;max-width:72ch;margin:0 0 26px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.step{background:#fff;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:18px 20px;transition:opacity .2s}
+.step .n{font-size:28px;font-weight:500;width:44px;font-variant-numeric:tabular-nums}
+.step p{margin:0;font-size:17px;line-height:1.55}
+.step .check{width:44px;height:44px;border:2px solid #000;background:#fff;display:grid;place-items:center;padding:0}
+.step .check svg{width:24px;height:24px;opacity:0}
+.step.done{opacity:.55}
+.step.done .check{background:#000}
+.step.done .check svg{opacity:1}
+.step.done p{text-decoration:line-through;text-decoration-thickness:1px}
+.terms{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:30px}
+.terms div{background:#fff;padding:14px 16px;font-size:14.5px;line-height:1.5}
+.terms b{font-weight:600;display:block;margin-bottom:2px}
+.finish{margin-top:30px;font-size:16px;line-height:1.6;max-width:72ch}
+.auto{font-size:13.5px;color:var(--muted);margin:10px 0 0}
+
+/* ================= Figma-ontwerp v2: crème achtergrond, lijntjespapier, polaroids, speldenkussens ================= */
+:root{--bg:#f4f4e9;--font:"Google Sans Code","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;--title:"JetBrains Mono","Google Sans Code",ui-monospace,Menlo,Consolas,monospace;--red:#ff0000}
+h1,h2,h3{font-family:var(--title);font-weight:500}
+.paper{background:#cdbb9f url(assets/papier.jpg) center top/cover no-repeat;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.onpaper{color:#fff;font-weight:500;text-shadow:0 1px 2px rgba(70,45,10,.45)}
+
+/* 1. Start: QR-code naar Élodie */
+#start .qrwrap{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;padding:24px 0}
+.qrtext{margin:110px 0 0;padding:0 16px 0 29px;font-size:clamp(17px,1.67vw,24px);line-height:1.7;max-width:420px}
+.qr{width:min(804px,calc(100vh - 96px),52vw);aspect-ratio:1;background:var(--grey);border:0;padding:0;display:grid;place-items:center;font-family:var(--title);font-size:clamp(40px,7.9vw,113px);color:#000;transition:transform .3s ease}
+.qr:hover,.qr:focus-visible{transform:scale(1.01)}
+.qr.real{background:#fff;padding:3.5%}
+.qr svg{width:100%;height:100%;display:block}
+@media (max-width:760px){#start .qrwrap{grid-template-columns:1fr;justify-items:center;align-content:center;gap:22px}.qrtext{margin:0;padding:0 22px;max-width:none;text-align:center}.qr{width:min(86vw,calc(100vh - 220px))}}
+
+/* 3. Resultaten: foto's in een wit kader */
+.cat-head h1{font-size:clamp(40px,5.3vw,76px)}
+.card .ph{background:#fff}
+.card .ph img{mix-blend-mode:normal}
+
+/* 4. Het stuk: polaroid + lijntjespapier + speldenkussen */
+.piece{grid-template-columns:minmax(0,462fr) minmax(0,700fr);gap:48px;align-items:stretch;padding-right:46px}
+@media (max-width:1000px){.piece{grid-template-columns:1fr;padding-right:0}}
+.bigphoto{background:#fff;aspect-ratio:462/658;align-self:start}
+.bigphoto img{inset:3.3% 6.1% auto 7.6%;width:86.3%;height:74.8%;padding:0;mix-blend-mode:normal}
+.pieceside{display:flex;flex-direction:column;min-width:0;padding-top:9px}
+.card4{min-height:0;aspect-ratio:700/461;padding:6.9% 5.4% 6% 9.4%;display:flex;flex-direction:column;gap:clamp(14px,2vw,26px)}
+.card4 h1{font-size:clamp(26px,3.2vw,46px);line-height:1;color:#000}
+.card4 p{margin:0;font-size:clamp(17px,1.9vw,27px);line-height:1.32}
+@media (max-width:640px){.card4{aspect-ratio:auto}}
+.pin{background:none;border:0;padding:0;display:block;line-height:0;transition:transform .35s ease;transform-origin:50% 62%}
+.pin img{width:100%;height:auto;display:block}
+.pin:hover,.pin:focus-visible{transform:rotate(-5deg) scale(1.05)}
+.pin:active{transform:scale(.97)}
+#makeBtn{width:min(336px,70%);margin:auto -46px 0 auto;align-self:flex-end}
+@media (max-width:1000px){#makeBtn{margin:22px 0 0 auto}}
+
+/* 5. Opmeten: patroondelen op vellen papier, speldenkussen naar het stappenplan */
+.patterns h2{text-transform:uppercase;font-size:clamp(26px,2.6vw,37px)}
+.ptiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px}
+@media (max-width:640px){.ptiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ptile{background:none}
+.ptile .art{aspect-ratio:179/257;background:#f1ede2 url(assets/vel.jpg) center/cover no-repeat;padding:10px}
+.ptile .cap{padding:7px 2px 12px}
+.ptile .cap b{font-size:13.5px}
+.ptile .cap .size{font-size:13.5px}
+.ptile .cap span{font-size:12px}
+.tohow{width:318px;height:auto;border-radius:0;background:none;box-shadow:none;right:18px;bottom:18px;display:block;padding:0;line-height:0;transform-origin:50% 62%}
+.tohow::after{display:none}
+.tohow img{width:100%;height:auto;display:block}
+.tohow:hover,.tohow:focus-visible{background:none;color:inherit;transform:rotate(-5deg) scale(1.05)}
+@media (max-width:640px){.tohow{width:190px;height:auto;right:8px;bottom:8px}}
+.dl,.ctl{font-family:var(--font)}
+
+/* 6. How-to: polaroid met punaise, materiaallijst en stappenplan op lijntjespapier */
+@media (min-width:901px){.howtop{grid-template-columns:minmax(0,1fr) minmax(0,505px);gap:48px}.mats{margin-top:-18px}}
+.intro{grid-template-columns:202px 1fr;gap:24px}
+@media (max-width:520px){.intro{grid-template-columns:120px 1fr}}
+.intro .thumb{background:#fff;aspect-ratio:202/234;overflow:visible}
+.intro .thumb img{inset:3.4% 5.4% auto 5%;width:89.6%;height:75.2%;padding:0;mix-blend-mode:normal}
+.intro .thumb::before{content:"";position:absolute;left:36%;top:-8px;width:20px;height:20px;border-radius:50%;background:var(--red);box-shadow:-3px 3px 0 -1px rgba(0,0,0,.35);z-index:1}
+.intro h1{font-size:clamp(28px,3.2vw,46px);line-height:1;margin-bottom:16px}
+.level{font-size:15px}
+.mats{background:#cdbb9f url(assets/papier.jpg) center top/cover no-repeat;padding:26px 28px 30px 11%;min-height:427px}
+.mats h2{font-family:var(--font);font-size:clamp(24px,2.5vw,34px);font-weight:500;margin-bottom:16px}
+.mats .fabric{background:rgba(255,255,255,.55);color:#000;text-shadow:none;font-weight:400}
+.mats .fabric .fl{color:#3d3424}
+.mats ul{gap:12px}
+.mats li{font-size:16px;color:#000;text-shadow:none}
+.plan{background:#cdbb9f url(assets/papier.jpg) center top/cover no-repeat;padding:44px clamp(18px,4vw,56px) 56px 9.4%;min-height:560px}
+.plan-head{justify-content:center;margin-bottom:34px;margin-left:-9.4%}
+.plan-head h2{font-size:clamp(28px,3.2vw,46px);line-height:1}
+.steps{gap:29px}
+.step{background:none;grid-template-columns:auto auto 1fr;gap:20px;padding:0;align-items:center}
+.step .check{order:-1;width:47px;height:47px;border:4px solid var(--red);background:transparent}
+.step .check svg{width:28px;height:28px}
+.step.done .check{background:var(--red)}
+.step .n{font-family:var(--title);font-size:24px;width:auto;min-width:30px}
+.step p{font-size:17px;line-height:1.5}
+.auto{color:#3d3424}
+.finish{font-size:14.5px;color:var(--muted);margin-top:18px}
+.embbox{background:#fff}
+@media (max-width:640px){.plan{padding-left:13%;padding-right:14px}.plan-head{margin-left:-13%}.step{gap:10px}.step .check{width:36px;height:36px;border-width:3px}.step .check svg{width:20px;height:20px}.step .n{font-size:18px;min-width:18px}.step p{font-size:15.5px}.tohow{width:150px}}
+
+/* ================= v3: atelier-tafel. Polaroids met speld, getapet papier, labels aan een touwtje, één rode draad ================= */
+:root{--thread:#e2231a;--shot:#e8e5d9;--tape:rgba(246,222,128,.78);--lift:0 1px 2px rgba(40,30,10,.16),0 12px 26px rgba(60,48,24,.18)}
+.pinhead{position:absolute;left:50%;top:-11px;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9a8f,var(--thread) 55%,#9c120c);box-shadow:-4px 6px 3px rgba(0,0,0,.26);z-index:3}
+
+/* 3. Resultaten als polaroids */
+.cards{gap:46px 44px;padding:8px 6px 0}
+@media (max-width:640px){.cards{gap:26px 16px}}
+.card{background:#fff;padding:12px 12px 6px;gap:0;box-shadow:var(--lift);transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s;animation:deal .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*45ms)}
+.card:nth-child(4n+1){transform:rotate(-1.7deg)}
+.card:nth-child(4n+2){transform:rotate(1.2deg)}
+.card:nth-child(4n+3){transform:rotate(-.7deg)}
+.card:nth-child(4n){transform:rotate(1.9deg)}
+.card:hover,.card:focus-visible{transform:rotate(0deg) translateY(-8px) scale(1.03);box-shadow:0 2px 4px rgba(40,30,10,.16),0 24px 40px rgba(60,48,24,.24);z-index:2}
+.card .ph{aspect-ratio:1;background:var(--shot);overflow:visible}
+.card .ph img{mix-blend-mode:multiply;padding:8px}
+.card .t{font-size:14px;line-height:1.3;min-height:3.9em;padding:12px 2px 6px}
+.card .badge{left:-10px;top:12px;background:var(--thread);rotate:-5deg;padding:5px 10px;box-shadow:0 2px 4px rgba(0,0,0,.2);z-index:2}
+@keyframes deal{from{opacity:0;translate:0 26px;rotate:4deg}}
+
+/* 4. Het stuk */
+#stuk{overflow-x:clip}
+#stuk .page{padding-bottom:230px}
+.piece{position:relative;gap:64px;padding-right:20px;margin-top:34px}
+.thread{position:absolute;left:0;top:-14px;width:100%;height:calc(100% + 190px);overflow:visible;pointer-events:none;z-index:2}
+.thread .st{fill:none;stroke:var(--thread);stroke-width:2.6;stroke-linecap:round;stroke-dasharray:11 8}
+.thread{animation:sew 1s .7s ease both}
+@keyframes sew{from{opacity:0}}
+@media (max-width:1000px){.thread{display:none}}
+.bigphoto{z-index:1;aspect-ratio:auto;padding:5.2% 6.4% 0;box-shadow:var(--lift);transform:perspective(1000px) rotate(-2.4deg) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .3s ease-out;animation:drop .7s cubic-bezier(.2,.9,.3,1.15) both;transform-origin:50% 0}
+.bigphoto .shot{position:relative;aspect-ratio:1/1.08;background:var(--shot);overflow:hidden}
+.bigphoto .shot img{inset:0;width:100%;height:100%;padding:12px;mix-blend-mode:multiply;transition:scale .5s ease}
+.bigphoto:hover .shot img{scale:1.06}
+.bigphoto .cap{display:flex;justify-content:space-between;gap:12px;padding:20px 2px 26px;font-size:14px;color:var(--muted)}
+.bigphoto .cap b{font-family:var(--title);font-weight:500;color:#000}
+@keyframes drop{from{opacity:0;translate:0 -60px;rotate:-9deg}}
+.pieceside{position:relative;z-index:1;padding-top:14px;gap:30px}
+.card4{position:relative;rotate:1.3deg;box-shadow:var(--lift);animation:slide .7s .15s cubic-bezier(.2,.8,.2,1) both}
+.card4::before,.card4::after{content:"";position:absolute;width:118px;height:30px;background:var(--tape);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.card4::before{left:-34px;top:8px;rotate:-38deg}
+.card4::after{right:-30px;bottom:14px;rotate:-34deg}
+@keyframes slide{from{opacity:0;translate:50px 0;rotate:5deg}}
+.tags{list-style:none;margin:0;padding:0 0 0 8px;display:flex;flex-wrap:wrap;gap:14px 18px}
+.tags li{position:relative;background:#fffdf5;padding:9px 16px 9px 34px;font-size:13.5px;line-height:1.25;clip-path:polygon(15px 0,100% 0,100% 100%,15px 100%,0 50%);filter:drop-shadow(0 3px 4px rgba(60,48,24,.22));animation:pop .45s cubic-bezier(.2,.9,.3,1.4) both;animation-delay:calc(.75s + var(--i)*90ms);transform-origin:12px 50%}
+.tags li::before{content:"";position:absolute;left:15px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--bg);box-shadow:inset 0 1px 1px rgba(0,0,0,.35)}
+.tags li:nth-child(odd){rotate:-2.2deg}
+.tags li:nth-child(even){rotate:1.6deg}
+.tags li:nth-child(3n){rotate:-.6deg}
+@keyframes pop{from{opacity:0;scale:.4;rotate:-14deg}}
+#makeBtn,.tohow{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:calc(-6px + env(safe-area-inset-bottom,0px));width:318px;margin:0;z-index:20;animation:wob 5s ease-in-out infinite}
+@keyframes wob{0%,100%{rotate:-2.5deg}50%{rotate:2.5deg}}
+@media (max-width:1000px){#makeBtn{margin:0}}
+@media (max-width:640px){#makeBtn,.tohow{width:150px;right:4px;bottom:-4px}#stuk .page{padding-bottom:150px}.piece{gap:36px}.card4::before{left:-40px}.card4::after{right:-40px}}
+
+/* 6. How-to: polaroid iets schuin, zelfde speld */
+.intro .thumb{box-shadow:var(--lift);rotate:-2.5deg}
+.intro .thumb::before{left:44%;top:-10px;width:22px;height:22px;background:radial-gradient(circle at 35% 30%,#ff9a8f,var(--thread) 55%,#9c120c);box-shadow:-4px 6px 3px rgba(0,0,0,.26)}
+.intro .thumb img{mix-blend-mode:multiply;background:none}
+.mats,.plan{box-shadow:var(--lift)}
+.mats{rotate:.8deg}
+
+/* ================= Élodie: chat op de telefoon (na het scannen van de QR-code) ================= */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.qrhint{display:block;margin-top:14px;font-size:clamp(13px,1.1vw,16px);color:var(--muted)}
+#elodie{background:var(--bg)}
+.el{max-width:560px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.el-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0 4px;font-size:13px;color:var(--muted)}
+.el-top b{font-family:var(--title);font-weight:500;color:#000;font-size:15px}
+.el-mute{background:none;border:1.5px solid #000;padding:6px 10px;font:inherit;font-size:12.5px;color:#000;display:inline-flex;gap:6px;align-items:center}
+.el-mute svg{width:16px;height:16px}
+.el-stage{position:relative;height:min(48vh,440px);height:min(48dvh,440px);min-height:300px;margin-top:6px}
+.el-fig{position:absolute;right:-10px;bottom:0;width:60%;height:100%}
+.el-fig img{position:absolute;right:0;bottom:0;max-width:100%;max-height:100%;object-fit:contain;object-position:right bottom;opacity:0;transform-origin:50% 100%;transition:opacity .15s}
+.el-fig img.on{opacity:1;animation:elpop .4s cubic-bezier(.3,1.5,.5,1)}
+.el-fig.talk img.on{animation:elbob .24s ease-in-out infinite alternate}
+@keyframes elpop{from{transform:scale(.94)}}
+@keyframes elbob{to{transform:translateY(-6px) scale(1.012,.992)}}
+.el-note{position:absolute;left:0;top:18px;width:58%;min-height:132px;z-index:2;padding:22px 16px 18px 26px;rotate:-1.6deg;box-shadow:var(--lift)}
+.el-note::before{content:"";position:absolute;left:50%;top:-12px;width:84px;height:26px;margin-left:-42px;background:var(--tape);rotate:3deg;box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.el-note p{margin:0;font-size:clamp(15px,4vw,18px);line-height:1.45;font-weight:500;color:#000;min-height:2.9em}
+.el-log{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-direction:column;gap:16px;flex:1}
+.el-log li{max-width:88%;font-size:15px;line-height:1.5;animation:elin .35s cubic-bezier(.2,.8,.2,1) both}
+@keyframes elin{from{opacity:0;translate:0 12px}}
+.m-el{align-self:flex-start;background:#fff;padding:12px 14px;box-shadow:var(--lift);rotate:-.5deg}
+.m-el .who{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px;letter-spacing:.04em}
+.m-me{align-self:flex-end;background:#fffdf5;padding:10px 16px 10px 32px;clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 50%);filter:drop-shadow(0 3px 4px rgba(60,48,24,.22));rotate:1deg;position:relative}
+.m-me::before{content:"";position:absolute;left:14px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--bg);box-shadow:inset 0 1px 1px rgba(0,0,0,.35)}
+.m-wait{display:flex;gap:10px;align-items:center;color:var(--muted)}
+.m-wait i{width:6px;height:6px;border-radius:50%;background:var(--thread);animation:eldot 1s infinite ease-in-out}
+.m-wait i:nth-child(2){animation-delay:.15s}.m-wait i:nth-child(3){animation-delay:.3s}
+@keyframes eldot{50%{transform:translateY(-5px);opacity:.4}}
+.m-res{align-self:stretch!important;max-width:none!important;rotate:none!important}
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:10px}
+.mini{background:#fff;border:0;padding:6px 6px 4px;text-align:left;display:flex;flex-direction:column;box-shadow:var(--lift);transition:transform .3s}
+.mini:nth-child(odd){rotate:-2deg}.mini:nth-child(even){rotate:1.5deg}
+.mini:hover,.mini:focus-visible{transform:translateY(-4px) rotate(0deg)}
+.mini span:first-child{position:relative;aspect-ratio:1;background:var(--shot)}
+.mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:4px;mix-blend-mode:multiply}
+.mini b{font-weight:400;font-size:11px;line-height:1.25;padding:6px 1px 3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.el-more{margin-top:14px;width:100%;background:#000;color:#fff;border:0;padding:14px 16px;font:inherit;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.el-dock{position:sticky;bottom:0;z-index:5;background:linear-gradient(rgba(244,244,233,0),var(--bg) 18px);padding:22px 0 calc(14px + env(safe-area-inset-bottom,0px))}
+.el-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;scrollbar-width:none}
+.el-chips button{flex:none;background:#fff;border:1.5px solid #000;padding:8px 12px;font:inherit;font-size:13.5px;color:#000}
+.el-chips button:hover{background:#000;color:#fff}
+.el-form{display:flex;gap:8px}
+.el-form input{flex:1;min-width:0;font:inherit;font-size:16px;padding:13px 14px;border:1.5px solid #000;background:#fff;color:#000;border-radius:0}
+.el-form button{flex:none;background:#000;color:#fff;border:0;padding:0 18px;font:inherit;font-size:15px}
+.el-form button:disabled{opacity:.5}
+.el-start{width:100%;background:var(--thread);color:#fff;border:0;padding:17px 18px;font:inherit;font-size:17px;font-weight:500;box-shadow:0 6px 16px rgba(160,20,10,.25)}
+.el-start small{display:block;font-size:12.5px;font-weight:400;opacity:.85;margin-top:3px}
+@media (min-width:900px){.el-stage{height:440px}}
+
+/* Élodie verschijnt even onderaan bij het stuk en bij het opmeten */
+.el-peek{position:fixed;left:max(10px,env(safe-area-inset-left,0px));bottom:0;z-index:19;display:flex;align-items:flex-end;gap:4px;pointer-events:none}
+.el-peek>*{pointer-events:auto}
+.el-peek .pk-fig{position:relative;width:150px;height:200px;border:0;padding:0;background:none;animation:pkin .6s cubic-bezier(.2,.9,.3,1.2) both}
+.el-peek .pk-fig img{position:absolute;left:0;bottom:-6px;max-width:100%;max-height:100%;object-fit:contain;object-position:left bottom;transform-origin:50% 100%}
+.el-peek .pk-say{position:relative;margin:0 0 120px;max-width:min(330px,calc(100vw - 190px));background:#fff;padding:12px 30px 12px 14px;font-size:14.5px;line-height:1.45;box-shadow:var(--lift);rotate:-1deg;animation:elin .35s .3s both}
+.el-peek .pk-say::after{content:"";position:absolute;left:-9px;bottom:16px;border:9px solid transparent;border-right-color:#fff;border-left:0}
+.el-peek .pk-x{position:absolute;right:4px;top:4px;width:24px;height:24px;border:0;background:none;font-size:18px;line-height:1;color:var(--muted)}
+@keyframes pkin{from{translate:0 110%}}
+@media (max-width:640px){.el-peek .pk-fig{width:96px;height:132px}.el-peek .pk-say{margin-bottom:150px;font-size:13.5px;max-width:calc(100vw - 120px)}}
+
+/* ================= Telefoon: Élodie in haar eigen stijl (paars, geel, Golos Text) ================= */
+#elodie{--paars:#8f10f0;--geel:#f9c935;--ink:#141414;--zacht:#f4eefb;background:#fff;font-family:"Golos Text",system-ui,sans-serif;color:var(--ink)}
+#elodie h1{font-family:"Golos Text",system-ui,sans-serif}
+.ph{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;gap:10px;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.ph-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ph-head h1{margin:0;font-size:24px;font-weight:900;letter-spacing:-.02em}
+.ph-head h1 span{color:var(--paars)}
+.ph-mute{border:2px solid var(--ink);background:#fff;border-radius:99px;padding:6px 12px;font:500 13px "Golos Text",system-ui,sans-serif;color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+.ph-mute svg{width:16px;height:16px}
+.ph-stage{position:relative;flex:1;min-height:360px;background:var(--zacht);border-radius:28px;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;
+  background-image:repeating-linear-gradient(90deg,transparent 0 39px,rgba(143,16,240,.07) 39px 40px),repeating-linear-gradient(0deg,transparent 0 39px,rgba(143,16,240,.07) 39px 40px)}
+.ph-fig{position:absolute;left:0;right:0;bottom:0;top:118px}
+.ph-fig img{position:absolute;left:50%;bottom:0;max-height:100%;max-width:92%;object-fit:contain;opacity:0;transform-origin:50% 100%;translate:-50% 0;transition:opacity .12s}
+.ph-fig img.on{opacity:1;animation:elpop .35s cubic-bezier(.3,1.6,.5,1)}
+.ph-fig.talk img.on{animation:elbob .22s ease-in-out infinite alternate}
+.ph-bubble{position:absolute;top:16px;left:16px;right:16px;margin:0;background:#fff;border:3px solid var(--ink);border-radius:22px;padding:13px 17px;font-size:18px;line-height:1.35;font-weight:500;min-height:58px;z-index:2;box-shadow:5px 5px 0 var(--geel)}
+.ph-bubble::after{content:"";position:absolute;bottom:-14px;right:30%;width:22px;height:22px;background:#fff;border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:rotate(45deg)}
+.ph-link{position:absolute;left:14px;bottom:14px;z-index:2;background:var(--ink);color:#fff;font-size:12px;padding:5px 11px;border-radius:99px;letter-spacing:.02em}
+.ph-link::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc84;margin-right:7px;vertical-align:1px}
+.ph-you{margin:2px 4px 0;min-height:1.4em;font-size:15px;color:#555;line-height:1.4}
+.ph-strip .strip{margin:0}
+.ph-strip .mini{border-radius:6px}
+.ph-dock{display:flex;flex-direction:column;align-items:center;gap:8px}
+.ph-start{width:100%;background:var(--paars);color:#fff;border:0;border-radius:18px;padding:16px;font:700 18px "Golos Text",system-ui,sans-serif;box-shadow:5px 5px 0 var(--geel)}
+.ph-start small{display:block;font-weight:400;font-size:13px;opacity:.85;margin-top:2px}
+.ph-talk{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.ph-mic{width:86px;height:86px;border-radius:50%;border:0;background:var(--paars);color:#fff;display:grid;place-items:center;box-shadow:5px 5px 0 var(--geel);transition:transform .2s,background-color .2s}
+.ph-mic svg{width:38px;height:38px}
+.ph-mic:active{transform:scale(.95)}
+.ph-mic.on{background:var(--ink);animation:micpulse 1.2s ease-in-out infinite}
+.ph-mic.busy{opacity:.5}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(249,201,53,.9),5px 5px 0 var(--geel)}50%{box-shadow:0 0 0 14px rgba(249,201,53,0),5px 5px 0 var(--geel)}}
+.ph-hint{margin:0;font-size:14px;color:#444;text-align:center}
+.ph-type{display:flex;gap:8px;width:100%}
+.ph-type input{flex:1;min-width:0;font:16px "Golos Text",system-ui,sans-serif;padding:11px 13px;border:2px solid #d9d9d9;border-radius:12px;background:#fff;color:var(--ink)}
+.ph-type button{flex:none;border:0;background:var(--ink);color:#fff;border-radius:12px;padding:0 18px;font:700 15px "Golos Text",system-ui,sans-serif}
+.ph-alt{background:none;border:0;padding:2px 6px;font:13px "Golos Text",system-ui,sans-serif;color:#555;text-decoration:underline;text-underline-offset:3px}
+/* groot scherm: status van de telefoon onder de QR-uitleg */
+.qrstatus{display:block;margin-top:18px;padding:10px 14px;background:#fff;font-size:15px;line-height:1.45;box-shadow:var(--lift);max-width:340px}
+.qrstatus::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#bbb;margin-right:8px;vertical-align:1px}
+.qrstatus.on::before{background:#2fb45a}
+.qrtest{display:inline-block;margin-top:14px;font-size:13px;color:var(--muted);text-underline-offset:3px}
+
+/* alleen Élodie op de telefoon */
+.ph{gap:12px}
+.ph-stage{min-height:0}
+.ph-mute{position:absolute;right:12px;bottom:12px;z-index:3}
+.ph-link{bottom:14px}
+.ph-fig{top:130px}
+.qrstatus b{display:inline;font-weight:500}
+.qrstatus .qs-me{margin-top:8px!important}
+.ph-mute{padding:8px;border-radius:50%}
+.qrstatus .qs-me,.qrstatus .qs-el{display:block;margin-top:6px;font-size:14px}
+.qrstatus .qs-el{color:#5b2a86}
+
+/* startscherm: Élodie houdt de QR-code omhoog */
+.bordwrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2vh,24px);padding-block:clamp(20px,4vh,48px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bordtitel{margin:0;font-size:clamp(40px,6.4vw,96px);line-height:1;letter-spacing:-.01em;text-align:center}
+.bord{position:relative;width:min(1240px,100%,calc((100vh - 230px)*1.473));max-width:100%}
+.bord>img{display:block;width:100%;height:auto}
+.bord .qr{position:absolute;left:37.3%;top:18.2%;width:35.3%;height:auto;aspect-ratio:1;padding:0;background:#fff;transform:rotate(-2.3deg);font-size:clamp(20px,3vw,48px)}
+.bord .qr:hover{transform:rotate(-2.3deg)}
+.bord .qr.real{padding:1.2%}
+#start .qrstatus{margin:0;max-width:560px;text-align:left}
+
+/* ================= Telefoon volgens Figma (naaikamer, crème tekstvlak, Élodie linksonder) ================= */
+#elodie{background:#2b2620;font-family:var(--font);color:#000}
+.ph2{position:relative;max-width:520px;margin:0 auto;height:100vh;height:100dvh;overflow:hidden;background:#b9a68c url(img/naaikamer.jpg) center/cover no-repeat}
+.ph2-box{position:absolute;left:5.5%;right:5.5%;top:calc(5.4% + env(safe-area-inset-top,0px));height:26.2%;min-height:170px;background:#f4f4e9;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 22px;text-align:center;z-index:2}
+.ph2-say{margin:0;font-size:clamp(15px,4.4vw,19px);line-height:1.45;font-weight:500;text-wrap:balance}
+.ph2-hint:empty{display:none}
+.ph2-hint{margin:12px 0 0;font-size:12.5px;color:#666;line-height:1.35}
+.ph2-box .ph-link.bad::before{background:#e2231a}
+.ph2-box .ph-link.bad{left:12px;text-align:center;line-height:1.35}
+.ph2-box:has(.ph-link.bad:not([hidden])){padding-top:56px}
+.ph2-box .ph-link{position:absolute;top:9px;right:11px;left:auto;bottom:auto;background:none;color:#555;font-size:11px;padding:0;letter-spacing:.02em}
+.ph2-fig{position:absolute;left:-2.7%;bottom:-1.8%;width:80%;height:65%;z-index:1}
+.ph2-fig img{position:absolute;left:0;bottom:0;max-width:100%;max-height:100%;object-fit:contain;object-position:left bottom;opacity:0;transform-origin:30% 100%;transition:opacity .12s}
+.ph2-fig img.on{opacity:1;animation:elpop .35s cubic-bezier(.3,1.6,.5,1)}
+.ph2-fig.talk img.on{animation:elbob .22s ease-in-out infinite alternate}
+.ph2-ctl{position:absolute;right:6%;bottom:calc(5% + env(safe-area-inset-bottom,0px));z-index:3;display:flex;flex-direction:column;align-items:center;gap:12px;transition:bottom .25s}
+#elodie.typing .ph2-ctl{bottom:calc(5% + 64px + env(safe-area-inset-bottom,0px))}
+.ph2-mute{width:44px;height:44px;border-radius:50%;border:2px solid #000;background:#f4f4e9;color:#000;display:grid;place-items:center;padding:0}
+.ph2-mute svg{width:20px;height:20px}
+.ph2-start{background:#f4f4e9;color:#000;border:2px solid #000;padding:14px 26px;font:500 17px var(--font);box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.ph2-mic{width:78px;height:78px;border-radius:50%;border:2px solid #000;background:#f4f4e9;color:#000;display:grid;place-items:center;padding:0;box-shadow:0 6px 18px rgba(0,0,0,.25);transition:background-color .2s,color .2s,transform .2s}
+.ph2-mic svg{width:34px;height:34px}
+.ph2-mic:active{transform:scale(.95)}
+.ph2-mic.on{background:#000;color:#f4f4e9;animation:micred 1.2s ease-in-out infinite}
+.ph2-mic.busy{opacity:.55}
+@keyframes micred{0%,100%{box-shadow:0 0 0 0 rgba(226,35,26,.75),0 6px 18px rgba(0,0,0,.25)}50%{box-shadow:0 0 0 16px rgba(226,35,26,0),0 6px 18px rgba(0,0,0,.25)}}
+.ph2-type{position:absolute;left:4%;right:4%;bottom:calc(4% + env(safe-area-inset-bottom,0px));z-index:3;display:flex;gap:8px}
+.ph2-type input{flex:1;min-width:0;font:16px var(--font);padding:12px 13px;border:2px solid #000;background:#f4f4e9;color:#000;border-radius:0}
+.ph2-type button{flex:none;border:0;background:#000;color:#f4f4e9;padding:0 18px;font:500 15px var(--font)}
+
+/* 5. Opmeten: het camerabeeld zit in een vergulde spiegel */
+.spiegel{position:relative;width:100%;max-width:470px;aspect-ratio:2058/3429;margin:0 auto}
+.spiegel .cam{position:absolute;left:16%;right:16%;top:21.8%;bottom:13.6%;width:auto;aspect-ratio:auto;border-radius:50%;background:linear-gradient(165deg,#d6ddd9 0%,#aebcb7 38%,#c9d1cd 62%,#93a29d 100%)}
+.spiegel .cam::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(118deg,transparent 28%,rgba(255,255,255,.28) 38%,transparent 50%,transparent 62%,rgba(255,255,255,.14) 68%,transparent 74%)}
+.spiegel .cam svg.over{opacity:.75}
+.spiegel .camstart{padding:0 14% 22%}
+.spiegel .camstart small{font-size:12px!important;line-height:1.3}
+.spiegel .camstart span{font-size:clamp(18px,1.9vw,26px)}
+.spiegel .camstart small{font-size:13.5px}
+.spiegel-lijst{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;filter:drop-shadow(0 12px 18px rgba(60,40,20,.3))}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- 1. START: QR-code naar Élodie -->
+<section class="screen" id="start" aria-label="Start">
+  <div class="bordwrap">
+    <h1 class="bordtitel">Chat met Élodie</h1>
+    <div class="bord">
+      <img src="img/elodie-bord.png" alt="Élodie houdt een bord met de QR-code omhoog, met een meetlat in haar andere hand" width="1700" height="1154">
+      <div class="qr" id="qrBtn" role="img" aria-label="QR-code naar Élodie"><span>QR CODE</span></div>
+    </div>
+    <p class="qrstatus" id="qrStatus" hidden></p>
+    <a id="qrTest" hidden></a>
+  </div>
+</section>
+
+<!-- 2. ÉLODIE (op de telefoon): enkel Élodie, je praat met je stem; wat ze vindt verschijnt op het grote scherm -->
+<section class="screen" id="elodie" aria-label="Praat met Élodie">
+  <div class="ph2">
+    <h1 class="vh">Élodie</h1>
+    <div class="ph2-box">
+      <p class="ph2-say" id="elSay" aria-live="polite">Bonjour chérie! Ik ben Élodie, de persoonlijke naaister van MoMu.</p>
+      <p class="ph2-hint" id="phHint">Tik op Begin om te starten</p>
+      <span class="ph-link" id="phLink" hidden></span>
+    </div>
+    <div class="ph2-fig" id="elFig">
+      <img data-m="hey" src="img/hey.png" alt="Élodie zwaait enthousiast">
+      <img data-m="praten" src="img/praten.png" alt="Élodie praat">
+      <img data-m="kijken" class="on" src="img/kijken.png" alt="Élodie kijkt over haar bril">
+      <img data-m="gevonden" src="img/gevonden.png" alt="Élodie met een stapel dozen">
+    </div>
+    <div class="ph2-ctl">
+      <button class="ph2-mute" id="elMute" aria-pressed="true"></button>
+      <button class="ph2-start" id="elStart">Begin</button>
+      <div id="elAsk" hidden>
+        <button class="ph2-mic" id="phMic" aria-label="Praat met Élodie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      </div>
+    </div>
+    <form class="ph2-type" id="elForm" hidden><label class="vh" for="elIn">Wat zoek je?</label><input id="elIn" autocomplete="off" placeholder="Wat zoek je, chérie?"><button id="elSend">Zeg</button></form>
+    <button id="phAlt" type="button" hidden></button>
+  </div>
+</section>
+
+<!-- 3. CATEGORIE / RESULTATEN -->
+<section class="screen" id="cat" aria-label="Collectie">
+  <div class="page">
+    <button class="back" id="catBack" data-go="elodie">&larr; Terug naar Élodie</button>
+    <div class="cat-head"><h1 id="catTitle"></h1><p id="catSub"></p></div>
+    <div class="cards" id="cards"></div>
+  </div>
+</section>
+
+<!-- 4. HET GEKOZEN STUK -->
+<section class="screen" id="stuk" aria-label="Het gekozen kledingstuk">
+  <div class="page" id="stukBody"></div>
+</section>
+
+<!-- 5. OPMETEN -->
+<section class="screen" id="meten" aria-label="Opmeten voor de patronen">
+  <div class="page" id="metenBody"></div>
+</section>
+
+<!-- 6. HOW-TO -->
+<section class="screen" id="maken" aria-label="Zo maak je het">
+  <div class="page" id="makenBody"></div>
+</section>
+
+<div class="el-peek" id="elPeek" hidden>
+  <button class="pk-fig" id="pkFig" aria-label="Laat Élodie het nog eens zeggen"><img id="pkImg" src="img/praten.png" alt="Élodie"></button>
+  <p class="pk-say" id="pkSay"><span id="pkText"></span><button class="pk-x" id="pkX" aria-label="Élodie wegsturen">&times;</button></p>
+</div>
+
+<input type="file" id="photoIn" accept="image/*" hidden>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+const IN_CLAUDE=!!(window.claude&&window.claude.use);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ITEMS=[{"id": "01", "title": "Zwarte rijglaarsjes met metalen oogjes", "desc": "Hoge zwarte leren kinderlaarsjes met een rij ronde metalen oogjes langs de opening en gaatjesversiering op de neus.", "tags": ["schoenen", "rond"], "img": "fotos/01.jpg", "delen": "schacht, rijgsluiting met metalen oogjes, neus met gaatjes, lage hak"}, {"id": "02", "title": "Zwarte lakschoentjes met linten", "desc": "Hoge zwarte lakleren kinderschoentjes, dichtgeknoopt met brede zwarte linten als veters, met een golvende rand.", "tags": ["schoenen", "golvend"], "img": "fotos/02.jpg", "delen": "hoge schacht, veters van lint, ronde neus"}, {"id": "03", "title": "Bruine bandschoentjes met vlechtwerk", "desc": "Bruine leren bandschoentjes met een knoopje op het riempje en een gevlochten dambordmotief in een driehoek op de neus.", "tags": ["schoenen", "knopen", "ruit", "hoekig"], "img": "fotos/03.jpg", "delen": "open schoen, bandje met knoop, ronde neus, dikke zool"}, {"id": "04", "title": "Groen-beige bandschoentjes", "desc": "Tweekleurige kinderschoentjes in groen en beige leer, met een golvende naad, een gaatjesrand en een knoopje op het bandje.", "tags": ["schoenen", "knopen", "golvend"], "img": "fotos/04.jpg", "delen": "bandje met knoop, gaatjesrand, ronde neus"}, {"id": "05", "title": "Rode lakschoentjes met puntbies", "desc": "Rode lakleren bandschoentjes met een beige bies in een puntige, vlamachtige vorm en een knoopje op het bandje.", "tags": ["schoenen", "knopen", "hoekig", "golvend"], "img": "fotos/05.jpg", "delen": "bandje met knoop, puntige bies op de neus, ronde neus"}, {"id": "06", "title": "Witte bandschoentjes met gaatjesrand", "desc": "Ivoorkleurige kinderschoentjes met een enkelbandje met knoop en een rij kleine ronde gaatjes langs de rand.", "tags": ["schoenen", "knopen", "rond"], "img": "fotos/06.jpg", "delen": "enkelbandje met knoop, gaatjesrand langs de opening"}, {"id": "07", "title": "Paarse jurk met glinsterend borduursel", "desc": "Mouwloze paarse jurk met een diepe V-hals en verticale banen vol glinsterend borduursel met bladmotieven.", "tags": ["jurken", "borduursel", "strepen"], "img": "fotos/07.jpg", "delen": "geen mouwen (mouwloos), diepe V-hals, halterbandje, lang recht lijf"}, {"id": "08", "title": "Mutsje met kruissteek en groene pompon", "desc": "Rond zwart kapje met kleurrijk kruissteekborduursel: krullen en spiralen in vierkante panelen, sterbloemetjes en een groene wollen pompon.", "tags": ["hoeden", "borduursel", "franjes", "hoekig"], "img": "fotos/08.jpg", "delen": "ronde kapvorm, pompon bovenop, brede rand"}, {"id": "09", "title": "Zwarte bandschoentjes met stiksels", "desc": "Zwarte leren bandschoentjes met een knoopje en een waaier van gestikte lijnen op de neus.", "tags": ["schoenen", "knopen", "strepen"], "img": "fotos/09.jpg", "delen": "bandje met knoop, gestikte waaier op de neus"}, {"id": "10", "title": "Mutsje met vier pompons", "desc": "Zwart mutsje met een brede band kruissteekborduursel in kronkel- en sterpatronen en rode en paarse wollen pompons.", "tags": ["hoeden", "borduursel", "franjes", "hoekig"], "img": "fotos/10.jpg", "delen": "ronde kapvorm, vier pompons, brede band"}, {"id": "11", "title": "Leren bikerjack met rode mouwbanen", "desc": "Zwarte leren motorjas met een schuine rits, drukknopen, rode en witte strepen op de mouwen en grote cijfers op de mouw.", "tags": ["jassen", "rits", "strepen"], "img": "fotos/11.jpg", "delen": "lange mouwen, brede revers en kraag, schuine rits, zakken met rits"}, {"id": "12", "title": "Borduurpaneel met bloemen en ronde hals", "desc": "Zwart onafgewerkt stofdeel met een ronde halsopening, vol kruissteekborduursel van roze bloemen en golvende groene ranken.", "tags": ["borduursel", "bloemen", "golvend", "rond"], "img": "fotos/12.jpg", "delen": "ronde halsopening met spleet, voorpand (onafgewerkt patroondeel), geen mouwen"}, {"id": "13", "title": "Rood borduurpaneel met vierkante motieven", "desc": "U-vormig rood halsstuk vol kleurige vierkante spiraalmotieven en kleine cirkeltjes, met een geborduurde rand.", "tags": ["borduursel", "hoekig", "rond"], "img": "fotos/13.jpg", "delen": "U-vormige halsopening, halsstuk of voorpand (onafgewerkt patroondeel)"}, {"id": "14", "title": "Borduurpaneel met roze sterbloemen", "desc": "Zwart stofdeel met een V-hals en een V-vormige band van kruissteek met achtpuntige roze sterbloemen.", "tags": ["borduursel", "bloemen", "hoekig"], "img": "fotos/14.jpg", "delen": "V-hals, voorpand (onafgewerkt patroondeel), geen mouwen"}, {"id": "15", "title": "Hygiënegordel met stoffen verbanden", "desc": "Set met een klein gestreept etuitje met rits, een beige elastische gordel met clip en twee witte stoffen verbanden.", "tags": ["ondergoed", "rits", "strepen"], "img": "fotos/15.jpg", "delen": "gordel met clips, rechthoekige stroken, etui"}, {"id": "16", "title": "Gestreepte schoudertas met twee knopen", "desc": "Witte linnen schoudertas met brede blauwe verticale strepen en een klep die sluit met twee ronde knopen.", "tags": ["tassen", "strepen", "knopen"], "img": "fotos/16.jpg", "delen": "rechthoekige tas, klep, schouderband"}, {"id": "17", "title": "Coltrui met keffiyeh-motief", "desc": "Zwart-witte gebreide coltrui met het netachtige keffiyeh-motief, een zigzagband onderaan en een klein Palestijns vlagje.", "tags": ["truien", "ruit", "hoekig"], "img": "fotos/17.jpg", "delen": "lange mouwen, col (opstaande kraag), boord onderaan"}, {"id": "18", "title": "Witte bloes met kanten kraag", "desc": "Witte bloes met een opstaande kanten kraag, verticale plooitjes en kantstroken op de voorkant en lange mouwen.", "tags": ["bloezen", "kant", "strepen", "knopen"], "img": "fotos/18.jpg", "delen": "lange mouwen met pof aan de schouder en manchetten, opstaande kanten kraag, plooitjes, knoopsluiting"}, {"id": "19", "title": "Rode schort met geborduurde banden", "desc": "Rode geweven schort met horizontale strepen, banden met geborduurde bloemen, kant langs de randen en gedraaide koordjes.", "tags": ["schorten", "strepen", "bloemen", "kant", "borduursel"], "img": "fotos/19.jpg", "delen": "tailleband met koorden, rechthoekige schortbaan, zoom"}, {"id": "20", "title": "Zwart vestje met krullen en bolknopen", "desc": "Kort zwart vestje met wit binnenwerk, gestikte golvende lijnen en spiralen en een rij bolvormige knopen.", "tags": ["jassen", "golvend", "knopen", "borduursel", "rond"], "img": "fotos/20.jpg", "delen": "geen mouwen, armsgaten, korte voorpanden, ronde zoom"}, {"id": "21", "title": "Zwart baretje met edelweiss", "desc": "Zwart fluwelen baretje met een steeltje bovenop, geborduurd met edelweiss, vergeet-mij-nietjes en takjes.", "tags": ["hoeden", "bloemen", "borduursel"], "img": "fotos/21.jpg", "delen": "rond baretje, steeltje bovenop"}, {"id": "22", "title": "Gehaakt mutsje in paars en oranje", "desc": "Klokvormig gehaakt mutsje met zigzag- en golfstrepen in paars, oranje en rood en een geschulpte rand.", "tags": ["hoeden", "hoekig", "golvend", "strepen"], "img": "fotos/22.jpg", "delen": "klokvorm, geschulpte rand"}, {"id": "23", "title": "Ecru bloes met smokwerk", "desc": "Ecru bloes met korte mouwen, een opstaande kraag, ruitvormig smokwerk op de borst en een rij knoopjes.", "tags": ["bloezen", "knopen", "ruit", "hoekig"], "img": "fotos/23.jpg", "delen": "korte aangeknipte mouwen (kimonomouw), opstaande kraag, knoopsluiting, rechte zoom"}, {"id": "24", "title": "Groene jurk met lange rits", "desc": "Strakke groene jurk met lange mouwen, gestikte naden en een lange rits midden voor.", "tags": ["jurken", "rits"], "img": "fotos/24.jpg", "delen": "lange smalle mouwen, opstaande hals, rits midden voor, prinsesnaden, uitlopende rok"}, {"id": "25", "title": "Blauwe matrozenjurk", "desc": "Blauwe kinderjurk met een matrozenkraag, witte strepen op kraag, manchetten en zoom, knopen en een plooirok.", "tags": ["jurken", "strepen", "knopen", "hoekig"], "img": "fotos/25.jpg", "delen": "lange pofmouwen met manchetten, grote matrozenkraag, plooirok, knoopsluiting, verlaagde taille"}, {"id": "26", "title": "Witte satijnen jurk met franjesjerp", "desc": "Witte satijnen jurk met geborduurde krullen op het lijfje en een brede sjerp die eindigt in lange franjes.", "tags": ["jurken", "franjes", "golvend", "borduursel"], "img": "fotos/26.jpg", "delen": "driekwart mouwen met kanten manchetten, ronde hals, sjerp, rechte rok"}, {"id": "27", "title": "Groene jas met gouden knopen", "desc": "Groene wollen jas met een opstaande kraag, een rij glimmende gouden knopen en rode biezen, gedragen over paarse stof.", "tags": ["jassen", "knopen", "rond"], "img": "fotos/27.jpg", "delen": "lange mouwen, opstaande kraag, knopenrij, jaspanden"}, {"id": "28", "title": "Zwart-gouden schoudermanteltje", "desc": "Kort schoudermanteltje van zwart kant met krullen over goudglanzende stof, met een geplooide ruche aan de rand en een strik.", "tags": ["jassen", "kant", "golvend"], "img": "fotos/28.jpg", "delen": "schoudercape (cirkelvorm), ruche aan de zoom, strik aan de hals"}, {"id": "29", "title": "Zwart glinsterend schouderstuk", "desc": "Zwart schouderstuk in een trapeziumvorm, gebreid of geweven met een glinsterende draad.", "tags": ["jassen", "hoekig"], "img": "fotos/29.jpg", "delen": "trapeziumvorm, geen mouwen, schouderstuk"}, {"id": "30", "title": "Witte kniebroek met knoopsgaten", "desc": "Witte kniebroek met een hoge taille, knopen aan de tailleband en knoopsgaten en een veter aan de knie.", "tags": ["broeken", "knopen"], "img": "fotos/30.jpg", "delen": "broekspijpen tot de knie, klep vooraan, tailleband, knoopsgaten aan de knie"}, {"id": "31", "title": "Blauwe huzarenjas met koorden", "desc": "Blauwe uniformjas met horizontale zwarte koorden en knopen over de borst en grote zilveren krul- en knoopmotieven op de mouwen.", "tags": ["jassen", "knopen", "strepen", "golvend"], "img": "fotos/31.jpg", "delen": "lange mouwen met krulversiering, opstaande kraag, epauletten, koorden over de borst"}, {"id": "32", "title": "Donkerblauwe jas met geborduurde mouwen", "desc": "Lange donkerblauwe open jas met een kimono-achtige snit en kleurrijke geborduurde banden op de mouwen.", "tags": ["jassen", "borduursel", "strepen"], "img": "fotos/32.jpg", "delen": "lange wijde mouwen met geborduurde banden, opstaande kraag, open voorkant, lange rechte jas"}, {"id": "33", "title": "Uniformjas met franje-epauletten", "desc": "Zwarte uniformjas met een rij gouden knopen, franje-epauletten op de schouders en felrode panden.", "tags": ["jassen", "knopen", "franjes"], "img": "fotos/33.jpg", "delen": "lange mouwen, epauletten met franjes, slippanden, opstaande kraag, knopenrij"}, {"id": "34", "title": "Herenslip met camouflageprint", "desc": "Groene herenslip met een camouflage- en letterprint, een kaki tailleband en een klein metalen labeltje.", "tags": ["ondergoed"], "img": "fotos/34.jpg", "delen": "tailleband, beenopeningen"}, {"id": "35", "title": "Witte slip met letters op de band", "desc": "Witte katoenen herenslip met een tailleband vol herhaalde letters van het merk Bikkembergs.", "tags": ["ondergoed", "strepen"], "img": "fotos/35.jpg", "delen": "tailleband, beenopeningen"}, {"id": "36", "title": "Kakibroek met kleurvlakken", "desc": "Kaki broek met grote rechthoekige vlakken in wit en donkerblauw, omrand met felblauwe biezen.", "tags": ["broeken", "hoekig", "strepen"], "img": "fotos/36.jpg", "delen": "broekspijpen, taille, grote rechthoekige kleurvlakken"}, {"id": "37", "title": "Patchworkjack met twee ritsen", "desc": "Jack van lappen in bruin, zwart en beige in rechthoekige vormen, met twee lange ritsen.", "tags": ["jassen", "rits", "hoekig"], "img": "fotos/37.jpg", "delen": "lange mouwen, rits, hoge kraag, zakken"}, {"id": "38", "title": "Groene jak met geruite schort", "desc": "Klederdracht met een groene jak, een fijn geruite schort met strik, een zwarte rok en een witte kap met lint.", "tags": ["schorten", "ruit", "hoeden"], "img": "fotos/38.jpg", "delen": "lange mouwen, schort, kap met lint, lange rok"}, {"id": "39", "title": "Kinderjurkje met grote kanten kraag", "desc": "Grijsgroen kinderjurkje met een brede ronde kraag met kant en kant aan de zoom en de mouwen.", "tags": ["jurken", "kant", "golvend", "rond"], "img": "fotos/39.jpg", "delen": "lange mouwen met pof en kanten manchet, brede ronde kraag, recht jurkje"}, {"id": "40", "title": "Gestreepte schort met gehaakte randen", "desc": "Kinderschort met verticale zwart-beige strepen, gekruiste bandjes en gehaakte zwarte randen met lusjes.", "tags": ["schorten", "strepen", "kant", "golvend"], "img": "fotos/40.jpg", "delen": "geen mouwen, gekruiste schouderbandjes, schortlijfje, wijde rok"}, {"id": "41", "title": "Kinderjurkje met druivenborduursel", "desc": "Kinderjurkje met een geruit lijfje en een rok vol rode druiventrossen en blauwe blaadjes, met een geschulpte zoom.", "tags": ["jurken", "ruit", "bloemen", "golvend", "borduursel"], "img": "fotos/41.jpg", "delen": "kapmouwtjes, ronde hals met geschulpte rand, lijfje, wijde klokrok, geschulpte zoom"}, {"id": "42", "title": "Blauw geruit schortje met huisje", "desc": "Blauw-wit geruit kinderschort met een vierkante hals, een ceintuur en een klein geappliqueerd huisje.", "tags": ["schorten", "ruit", "hoekig"], "img": "fotos/42.jpg", "delen": "lange mouwen met manchet, vierkante hals, ceintuur, rechte rok"}, {"id": "43", "title": "Blauw geruite schortjurk", "desc": "Lange blauw-wit geruite schortjurk met een vierkante hals, een ceintuur en een opgezette zak.", "tags": ["schorten", "ruit"], "img": "fotos/43.jpg", "delen": "lange pofmouwen met manchet, vierkante hals, ceintuur, opgezette zak"}, {"id": "44", "title": "Ecru leren enveloptasje", "desc": "Ecru leren handtasje in de vorm van een envelop, met een puntige klep en een dun schouderbandje.", "tags": ["tassen", "hoekig"], "img": "fotos/44.jpg", "delen": "puntige klep, dun schouderbandje"}, {"id": "45", "title": "Geborduurd tasje met kwasten", "desc": "Vierkant rood tasje met geometrisch borduursel van ruiten en zigzaglijnen en wollen kwasten aan de hoeken.", "tags": ["tassen", "borduursel", "hoekig", "franjes"], "img": "fotos/45.jpg", "delen": "vierkant tasje, koord, kwasten aan de hoeken"}, {"id": "46", "title": "Ovale broche met kralen", "desc": "Ovale broche vol glanzende blauwe en paarse kralen en glasstenen in een ster- en ruitmotief.", "tags": ["sieraden", "hoekig"], "img": "fotos/46.jpg", "delen": "ovale vorm"}, {"id": "47", "title": "Vierkante schildpadknopen", "desc": "Twee rechthoekige knopen in bruin schildpad met schuine lichte strepen.", "tags": ["knopen", "hoekig", "strepen"], "img": "fotos/47.jpg", "delen": "rechthoekige vorm"}, {"id": "48", "title": "Drie ronde schildpadknopen", "desc": "Drie ronde knopen in bruin schildpad, elk met een cirkel in een cirkel.", "tags": ["knopen", "rond"], "img": "fotos/48.jpg", "delen": "ronde vorm"}, {"id": "49", "title": "Blauw kraagje met kanten rand", "desc": "Waaiervormig donkerblauw kraagje met een brede rand van kant en een fluwelen lint.", "tags": ["kant", "golvend", "rond"], "img": "fotos/49.jpg", "delen": "waaiervormige kraag (halve cirkel), halsopening, lint"}, {"id": "50", "title": "Ecru mantel met rij knopen", "desc": "Lange ecru mantel op een paspop, met een rij versierde knopen en ruime plooien.", "tags": ["jassen", "knopen"], "img": "fotos/50.jpg", "delen": "lange wijde mouwen, opstaande kraag, knopenrij, wijde mantel met plooien"}, {"id": "51", "title": "Blauwgrijze cape met capuchon", "desc": "Wijde blauwgrijze cape met een capuchon, gouden borduursel en kwastjes.", "tags": ["jassen", "borduursel", "franjes"], "img": "fotos/51.jpg", "delen": "cape zonder mouwen, capuchon, kwastjes aan de hals"}, {"id": "52", "title": "Roze satijnen lijfje met pofmouwen", "desc": "Glanzend roze satijnen lijfje met een V-hals en grote pofmouwen van brokaat met bloemen.", "tags": ["bloezen", "bloemen"], "img": "fotos/52.jpg", "delen": "korte grote pofmouwen, V-hals, nauw lijfje met naden, punt aan de taille"}, {"id": "53", "title": "Zwart jakje met kant en strikjes", "desc": "Zwart jakje met een hoge kraag, kant, ruches en kleine strikjes op de voorkant.", "tags": ["bloezen", "kant"], "img": "fotos/53.jpg", "delen": "lange mouwen met pof bovenaan, hoge kraag, strikjes, kort lijfje"}, {"id": "54", "title": "Bloes met geborduurde strikjes", "desc": "Doorschijnende goudbeige bloes met verticale rijen geborduurde strikjes en geborduurde manchetten.", "tags": ["bloezen", "borduursel", "strepen"], "img": "fotos/54.jpg", "delen": "driekwart mouwen met geborduurde manchetten, ronde hals, aangerimpelde taille"}, {"id": "55", "title": "Blauw damasten lijfje met knoopjes", "desc": "Mouwloos blauw damasten lijfje met bloemen in de stof, een opstaande kraag en een lange rij stofknoopjes tot een punt.", "tags": ["bloezen", "knopen", "bloemen"], "img": "fotos/55.jpg", "delen": "geen mouwen (mouwloos), opstaande kraag, knopenrij, puntige zoom, getailleerd lijfje met naden"}, {"id": "56", "title": "Blauwe japon met vierkante hals", "desc": "Blauwe japon met een vierkante halslijn, driekwartmouwen, een open rok en een klein geweven motief.", "tags": ["jurken", "hoekig"], "img": "fotos/56.jpg", "delen": "elleboogmouwen met plooitjes, vierkante hals, open wijde rok"}, {"id": "57", "title": "Zwart jakje met paars plastron", "desc": "Zwart gestreept jakje met grote pofmouwen, een paars plastron in het midden en kant aan de manchetten.", "tags": ["bloezen", "kant", "strepen"], "img": "fotos/57.jpg", "delen": "hammouwen (grote pof bovenaan, smal onderaan), staande kraag, kanten manchetten, kort lijfje"}, {"id": "58", "title": "Bloemetjesjak met ruches", "desc": "Ecru jak met een print van kleine rode roosjes, gelaagde volants aan de mouwen en een rij knoopjes.", "tags": ["bloezen", "bloemen", "golvend", "knopen"], "img": "fotos/58.jpg", "delen": "klokmouwen met gelaagde volants, ronde hals, knopenrij, schootje (peplum)"}];
+const BY_ID=Object.fromEntries(ITEMS.map(it=>[it.id,it]));
+/* ================= Patroonbibliotheek: vereenvoudigde patroondelen (viewBox 0 0 200 260) ================= */
+const LIB={
+  voorpand:{naam:"Voorpand",d:"M30 70 Q62 66 72 22 L140 42 Q126 90 150 108 L140 236 L30 244 Z",fold:[72,242]},
+  voorpand_punt:{naam:"Voorpand met punt",d:"M30 70 Q62 66 72 22 L140 42 Q126 90 150 108 L142 214 Q92 226 30 256 Z",fold:[72,254]},
+  zijpand:{naam:"Zijpand",d:"M72 30 Q100 26 122 40 Q108 120 132 236 L68 236 Q88 120 72 30 Z"},
+  achterpand:{naam:"Achterpand",d:"M30 46 Q52 48 66 30 L140 48 Q128 92 152 112 L142 236 L30 240 Z",fold:[48,238]},
+  jasvoorpand:{naam:"Jasvoorpand",d:"M40 60 Q66 58 76 16 L140 34 Q128 80 152 98 L150 252 L40 252 Z"},
+  jurkvoorpand:{naam:"Jurkpand",d:"M30 52 Q56 50 64 18 L112 30 Q104 64 124 78 L172 252 L30 252 Z",fold:[54,250]},
+  rechtemouw:{naam:"Lange mouw",d:"M14 70 Q56 4 100 8 Q144 4 186 70 L156 252 L44 252 Z"},
+  tweedeligemouw:{naam:"Bovenmouw",d:"M20 64 Q60 4 104 10 Q150 18 176 72 L150 150 L156 252 L58 252 Q66 160 20 64 Z"},
+  pofmouw:{naam:"Pofmouw",d:"M6 110 Q50 -6 100 10 Q150 -6 194 110 L170 170 L30 170 Z",gather:[42,158,30],grain:[100,55,100,155]},
+  hammouw:{naam:"Hammouw",d:"M4 84 Q48 -8 100 6 Q152 -8 196 84 Q150 118 134 168 L126 254 L74 254 L66 168 Q50 118 4 84 Z",gather:[42,158,26]},
+  klokmouw:{naam:"Klokmouw",d:"M52 60 Q100 2 148 60 L196 252 L4 252 Z"},
+  ronde_kraag:{naam:"Ronde kraag",d:"M24 24 Q24 210 186 218 L186 166 Q76 158 72 24 Z",grain:[150,90,150,150]},
+  opstaande_kraag:{naam:"Staande kraag",d:"M8 150 Q100 166 192 136 L192 100 Q100 128 8 112 Z",grain:[60,128,140,124]},
+  matrozenkraag:{naam:"Matrozenkraag",d:"M20 20 L130 20 Q136 120 190 236 L160 244 L100 128 L20 150 Z",grain:[60,40,60,120]},
+  rokbaan:{naam:"Rokbaan",d:"M64 20 L136 20 L192 250 L8 250 Z"},
+  plooirok:{naam:"Plooirok (baan)",d:"M10 30 L190 30 L190 240 L10 240 Z",pleats:[40,70,100,130,160]},
+  schortbaan:{naam:"Schortbaan",d:"M20 40 L180 40 L186 244 L14 244 Z",gather:[30,170,52]},
+  manchet:{naam:"Manchet",d:"M10 100 L190 100 L190 160 L10 160 Z",grain:[60,130,140,130]},
+  tailleband:{naam:"Tailleband",d:"M6 116 L194 116 L194 144 L6 144 Z",grain:[60,130,140,130]},
+  broekvoor:{naam:"Broek voorpand",d:"M44 20 L132 20 L136 76 Q144 98 172 104 L156 250 L60 250 Z"},
+  broekachter:{naam:"Broek achterpand",d:"M36 14 L128 24 L138 70 Q150 104 190 110 L166 250 L52 250 Z"},
+  klep:{naam:"Klep",d:"M40 70 L160 70 L160 170 Q100 200 40 170 Z",grain:[100,90,100,160]},
+  plastron:{naam:"Plastron",d:"M60 20 L140 20 L150 240 L100 256 L50 240 Z"},
+  zak:{naam:"Opgestikte zak",d:"M50 70 L150 70 L150 180 Q100 200 50 180 Z",grain:[100,90,100,170]},
+  capuchon:{naam:"Capuchon",d:"M30 236 L30 70 Q40 14 112 16 Q184 26 176 126 L160 236 Z"},
+  cape:{naam:"Cape (halve cirkel)",d:"M6 40 L76 40 Q100 84 124 40 L194 40 Q194 250 100 250 Q6 250 6 40 Z",grain:[100,110,100,230]},
+  sjerp:{naam:"Sjerp",d:"M80 10 L120 10 L120 230 L100 252 L80 230 Z",grain:[100,40,100,200]},
+  kap:{naam:"Kap (muts)",d:"M100 20 Q150 120 180 230 Q100 250 20 230 Q50 120 100 20 Z"},
+  schoen_boven:{naam:"Bovenstuk schoen",d:"M20 160 Q30 70 90 60 Q150 56 186 120 L186 170 Q110 190 20 160 Z",grain:[100,90,100,160]},
+  schoen_zool:{naam:"Zool",d:"M70 20 Q120 20 128 80 Q132 150 118 230 Q100 254 82 230 Q66 150 62 80 Q60 20 70 20 Z"},
+  tas:{naam:"Tasvoorkant",d:"M20 60 L180 60 L180 230 L20 230 Z"}
+};
+const LIB_IDS=Object.keys(LIB);
+
+/* Eén patroondeel tekenen: snijlijn, stiklijn (gestippeld), draadrichting, stofvouw, inrimpelen, plooien */
+function pieceSVG(libId){
+  const p=LIB[libId]||LIB.rokbaan,g=p.grain||[100,95,100,195];
+  let s=`<path d="${p.d}" fill="#fff" stroke="#111" stroke-width="2.4" stroke-linejoin="round"/>`;
+  s+=`<g transform="translate(10 13) scale(.9)"><path d="${p.d}" fill="none" stroke="#111" stroke-width="1.2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/><\/g>`;
+  const ang=Math.atan2(g[3]-g[1],g[2]-g[0]),ah=(x,y,a)=>`M${x} ${y} l${(-8*Math.cos(a-0.45)).toFixed(1)} ${(-8*Math.sin(a-0.45)).toFixed(1)} M${x} ${y} l${(-8*Math.cos(a+0.45)).toFixed(1)} ${(-8*Math.sin(a+0.45)).toFixed(1)}`;
+  s+=`<path d="M${g[0]} ${g[1]} L${g[2]} ${g[3]} ${ah(g[2],g[3],ang)} ${ah(g[0],g[1],ang+Math.PI)}" stroke="#1d6a55" stroke-width="1.8" fill="none" stroke-linecap="round"/>`;
+  if(p.fold)s+=`<path d="M30 ${p.fold[0]} L30 ${p.fold[1]}" stroke="#c0392b" stroke-width="3" stroke-dasharray="12 4 2 4"/>`;
+  if(p.gather){const[x1,x2,y]=p.gather;let d=`M${x1} ${y}`;for(let x=x1;x<x2;x+=8)d+=` q4 -5 8 0`;s+=`<path d="${d}" stroke="#c0392b" stroke-width="1.6" fill="none"/>`}
+  if(p.pleats)p.pleats.forEach(x=>{s+=`<path d="M${x} 40 L${x} 230" stroke="#c0392b" stroke-width="1.4" stroke-dasharray="6 5"/><path d="M${x-6} 52 l6 -6 l6 6" stroke="#c0392b" stroke-width="1.4" fill="none"/>`});
+  return `<svg viewBox="-6 -10 212 276" role="img" aria-label="Patroondeel ${esc(p.naam)}">${s}<\/svg>`;
+}
+
+/* ================= Uitgewerkte patronen voor de showcase-stukken ================= */
+const PATTERNS={
+  "52":{niveau:3,
+    delen:[["voorpand_punt","Voorpand",1,"met punt aan de taille"],["zijpand","Zijpand",2,"geeft de nauwe pasvorm"],["achterpand","Achterpand",2,"sluiting midden achter"],["pofmouw","Pofmouw",2,"in brokaat; kop inrimpelen"],["manchet","Mouwband",2,"houdt de pof onderaan samen"]],
+    gemaakt:"Het lijfje bestaat uit meerdere smalle panden. Elke naad volgt het lichaam, zo sluit het nauw aan rond borst en taille en eindigt het vooraan in een punt. De pofmouwen zijn veel breder geknipt dan het armsgat: de extra stof is aan de mouwkop ingerimpeld en onderaan in een band gevat, daardoor bolt de mouw op. Zo'n lijfje werd meestal gevoerd en in de naden verstevigd met baleinen.",
+    materiaal:["Satijn of een andere glanzende stof (± 1 m)","Brokaat of jacquard voor de mouwen (± 0,8 m)","Katoenen voering (± 1 m)","Baleinband (optioneel)","Rits of haakjes voor midden achter"],
+    stappen:["Maak eerst een toile (proefmodel) in goedkoop katoen en pas het lijfje nauw aan.","Knip voorpand, zijpanden en achterpanden uit satijn en uit voering.","Stik de panden aan elkaar, strijk de naden open en zet eventueel baleinen in de naadwaarden.","Rimpel de mouwkop in tussen de inknipmerken tot hij in het armsgat past.","Rimpel de onderkant van de mouw in en werk die af met de mouwband.","Zet de mouwen in, werk hals en punt af met de voering en zet de sluiting midden achter."],
+    termen:[["Pofmouw","Mouw die opbolt doordat extra stof aan kop en onderkant is ingerimpeld."],["Inrimpelen","Stof samentrekken met een rijgdraad, zodat een lange rand korter wordt."],["Toile","Proefmodel in eenvoudige stof om pasvorm en patroon te testen."],["Balein","Smalle verstevigingsstaaf in een naad die een lijfje in vorm houdt."]]},
+  "57":{niveau:3,
+    delen:[["voorpand","Voorpand",2,"rond het plastron"],["achterpand","Achterpand",2,""],["hammouw","Hammouw (bovenmouw)",2,"wijde kop: inrimpelen of plooien"],["tweedeligemouw","Ondermouw",2,"smal rond de onderarm"],["plastron","Plastron",1,"paarse stof, midden voor"],["opstaande_kraag","Staande kraag",1,""],["manchet","Kanten manchet",2,""]],
+    gemaakt:"De opvallende hammouw (ook gigotmouw genoemd) is bovenaan heel wijd en wordt naar de pols toe smal. De extra stof aan de mouwkop is in plooitjes of rimpels in het armsgat gezet, soms met een opvulling eronder zodat de pof overeind blijft. Het lijfje is kort en nauw, met een apart plastron van paarse stof in het midden, een staande kraag en kant aan de manchetten.",
+    materiaal:["Zwarte gestreepte stof (± 2 m)","Paarse stof voor het plastron (± 0,3 m)","Voering (± 1,5 m)","Tule of vlieseline om de mouwkop te steunen","Kant voor de manchetten","Haakjes of knoopjes"],
+    stappen:["Teken de mouw in twee delen: een wijde bovenmouw en een smalle ondermouw.","Stik boven- en ondermouw aan elkaar en sluit de onderarmnaad.","Plooi of rimpel de mouwkop in en stik er een strook tule onder voor volume.","Stik voor- en achterpanden en zet het plastron midden voor.","Zet de staande kraag op de halslijn.","Zet de mouwen in en werk de manchetten af met kant."],
+    termen:[["Hammouw / gigotmouw","Mouw die bovenaan heel wijd is en naar de pols smal wordt, zoals een hambout."],["Plastron","Een apart borststuk in een andere stof, midden voor."],["Staande kraag","Smalle kraag die rechtop rond de hals staat."]]},
+  "31":{niveau:3,
+    delen:[["jasvoorpand","Voorpand",2,"koorden en knopen horizontaal over de borst"],["achterpand","Achterpand",2,"met naad midden achter"],["tweedeligemouw","Bovenmouw",2,"met krulversiering"],["rechtemouw","Ondermouw",2,"smaller deel aan de binnenkant"],["opstaande_kraag","Staande kraag",1,""],["manchet","Mouwopslag",2,"basis voor de krullen"]],
+    gemaakt:"Een huzarenjas is een kort, nauw aansluitend uniformjasje. Over de borst lopen horizontale koorden, brandenburgs genoemd, met knopen aan de uiteinden. De mouwen zijn tweedelig, zodat ze mooi meebuigen met de arm. Op de mouwen is soutache, een smal plat koord, in krullen en knopen gelegd en met de hand vastgenaaid.",
+    materiaal:["Stevige wollen stof (± 1,8 m)","Voering (± 1,5 m)","Soutache voor de krullen (± 15 m)","Rond koord voor de brandenburgs","Knopen (± 15)","Vlieseline voor kraag en voorpanden"],
+    stappen:["Teken de krulmotieven eerst op papier en breng ze met krijt over op de mouw.","Leg het soutache volgens de tekening en naai het met kleine steekjes vast, voordat je de mouw dichtstikt.","Stik voor- en achterpanden; verstevig de voorkant met vlieseline.","Stik boven- en ondermouw samen en zet de mouwen in.","Zet de staande kraag op.","Naai de koorden horizontaal over de borst en zet de knopen aan de uiteinden."],
+    termen:[["Brandenburgs","Horizontale koorden met knopen of lussen over de borst van een jas."],["Soutache","Smal plat koord dat in krullen op stof wordt genaaid."],["Tweedelige mouw","Mouw uit een boven- en een ondermouw, die de buiging van de arm volgt."]]},
+  "39":{niveau:2,
+    delen:[["jurkvoorpand","Voorpand",1,""],["jurkvoorpand","Achterpand",2,"sluiting midden achter"],["pofmouw","Mouw",2,"licht ingerimpeld"],["manchet","Manchet",2,"met kant"],["ronde_kraag","Kraag",2,"bovenkraag en onderkraag, kant langs de rand"]],
+    gemaakt:"Een eenvoudig kinderjurkje dat vanaf de schouders wijder wordt. Het opvallendste deel is de brede ronde kraag die over de schouders valt. Zo'n kraag bestaat uit twee lagen, een bovenkraag en een onderkraag, die aan elkaar gestikt en dan gekeerd worden, met kant langs de rand. Ook aan de zoom en de manchetten zit kant.",
+    materiaal:["Katoen of fijne wol (± 1,2 m)","Kantband (± 4 m)","Vlieseline voor de kraag","Knoopjes voor midden achter"],
+    stappen:["Knip de kraag twee keer: een bovenkraag en een onderkraag.","Leg het kant tussen beide lagen langs de buitenrand en stik rondom; keer en strijk.","Stik voor- en achterpanden aan de schouders en zijkanten.","Zet de kraag op de halslijn en werk af met een beleg.","Rimpel de mouwen licht in, zet ze in en werk af met manchetten met kant.","Zet de knoopjes midden achter en werk de zoom af met kant."],
+    termen:[["Bovenkraag en onderkraag","De zichtbare en de onderste laag van een kraag."],["Keren","Iets binnenstebuiten stikken en dan omdraaien, zodat de naad binnenin zit."],["Beleg","Strook stof die een rand, zoals de hals, aan de binnenkant afwerkt."]]},
+  "30":{niveau:2,
+    delen:[["broekvoor","Voorpand",2,"met klep vooraan"],["broekachter","Achterpand",2,"hoge taille achter"],["tailleband","Tailleband",1,"met knopen"],["klep","Klep",1,"sluit met knopen aan de tailleband"],["manchet","Knieband",2,"met knoopsgat en veter"]],
+    gemaakt:"Een kniebroek stopt net onder de knie, waar een knieband de pijp nauw rond het been sluit met een knoop of veter. In plaats van een gulp heeft deze broek een klep vooraan die met knopen aan de tailleband vastzit. De taille is hoog en het achterpand ruim, zodat je goed kunt zitten.",
+    materiaal:["Stevig katoen, linnen of fijne wol (± 1,5 m)","Knopen (± 10)","Smal lint of veter voor de knie","Vlieseline voor tailleband en klep"],
+    stappen:["Knip voorpanden, achterpanden, klep, tailleband en kniebanden.","Stik de binnenbeennaden en daarna de kruisnaad.","Werk de klep af en zet die aan de voorpanden.","Zet de tailleband op en maak de knoopsgaten voor de klep.","Rimpel of plooi de pijp onderaan in tot de breedte van de knieband.","Zet de kniebanden aan, maak een knoopsgat en rijg de veter erdoor."],
+    termen:[["Kniebroek (culotte)","Broek die net onder de knie stopt."],["Klep","Stoffen paneel vooraan dat met knopen sluit, in plaats van een gulp."],["Kruisnaad","De gebogen naad tussen de benen, van voor naar achter."]]}
+};
+const SHOWCASE=["52","57","31","39","30"];
+
+/* ================= Extra patroondelen ================= */
+Object.assign(LIB,{
+  slip_voor:{naam:"Slip voorpand",d:"M20 40 L180 40 L176 72 Q122 112 116 220 L84 220 Q78 112 24 72 Z"},
+  slip_achter:{naam:"Slip achterpand",d:"M14 30 L186 30 L184 82 Q130 142 122 232 L78 232 Q70 142 16 82 Z"},
+  kruisstuk:{naam:"Kruisstuk",d:"M62 40 L138 40 Q128 130 140 222 L60 222 Q72 130 62 40 Z"},
+  cirkel:{naam:"Cirkel",d:"M100 40 A90 90 0 1 1 99.9 40 Z",grain:[100,80,100,180]}
+});
+LIB_IDS.splice(0,LIB_IDS.length,...Object.keys(LIB));
+
+/* ================= Maten ================= */
+const MEASURES={
+  lengte:{label:"Lichaamslengte",min:140,max:205,def:168},
+  borst:{label:"Borstomtrek",min:70,max:140,def:90},
+  taille:{label:"Taille-omtrek",min:55,max:130,def:72},
+  heup:{label:"Heupomtrek",min:75,max:145,def:98},
+  schouder:{label:"Schouderbreedte",min:30,max:55,def:39},
+  arm:{label:"Armlengte",min:45,max:75,def:59},
+  hoofd:{label:"Hoofdomtrek",min:48,max:64,def:56}
+};
+const DEFAULT_M=Object.fromEntries(Object.entries(MEASURES).map(([k,v])=>[k,v.def]));
+const CAT_MEASURES={broeken:["lengte","taille","heup"],mutsen:["lengte","hoofd"],jassen:["lengte","borst","taille","schouder","arm"],ondergoed:["lengte","taille","heup"]};
+
+/* Afmetingen (breedte × hoogte in cm, inclusief wat bewegingsruimte) van elk patroondeel voor een set maten */
+function dims(lib,M){
+  const L=M.lengte,b=M.borst,t=M.taille,h=M.heup,s=M.schouder,a=M.arm,k=M.hoofd,hals=b*.4;
+  const R={
+    voorpand:[b/4+2,L*.26],voorpand_punt:[b/4+2,L*.28],achterpand:[b/4+2,L*.26],zijpand:[b/8+1,L*.22],
+    jasvoorpand:[b/4+6,L*.34],jurkvoorpand:[b/4+8,L*.55],
+    rechtemouw:[b*.38,a],tweedeligemouw:[b*.3,a],klokmouw:[b*.5,a*.9],pofmouw:[b*.55,a*.35],hammouw:[b*.6,a],
+    ronde_kraag:[hals/2+6,12],opstaande_kraag:[hals/2+1,4.5],matrozenkraag:[s,30],
+    rokbaan:[h/4+6,L*.4],plooirok:[h*.9,L*.4],schortbaan:[h/2+10,L*.45],
+    manchet:[b*.18+3,6],tailleband:[t+4,4],
+    broekvoor:[h/4+1,L*.34],broekachter:[h/4+4,L*.36],klep:[h/4,18],
+    plastron:[12,L*.24],zak:[14,16],capuchon:[k/2+2,k*.62],cape:[s*2.2,L*.35],sjerp:[12,90],
+    kap:[k/6+1.5,k/4-.5],cirkel:[k/3+4,k/3+4],
+    schoen_boven:[26,10],schoen_zool:[9,25],tas:[30,25],
+    slip_voor:[h/4+3,24],slip_achter:[h/4+5,28],kruisstuk:[8,15]
+  };
+  const r=R[lib]||[30,40];
+  return [Math.round(r[0]*2)/2,Math.round(r[1]*2)/2];
+}
+/* Tailleband van een slip is elastiek: korter dan de taille */
+function dimsFor(lib,naam,M){if(lib==="cirkel"&&/baret/i.test(naam))return[Math.round(M.hoofd/2),Math.round(M.hoofd/2)];if(lib==="tailleband"&&/brede hoofdband/i.test(naam))return[M.hoofd+2,8];if(lib==="tailleband"&&/elastiek/i.test(naam))return[Math.round(M.taille*.9),4];if(lib==="tailleband"&&/hoofd/i.test(naam))return[M.hoofd+2,4];return dims(lib,M)}
+
+/* Hoeveel stof je nodig hebt bij een stofbreedte van 140 cm (ruwe schatting) */
+function fabricMeters(delen,M){
+  let area=0;delen.forEach(([lib,naam,aantal])=>{const[w,h]=dimsFor(lib,naam,M);area+=(w+3)*(h+3)*aantal});
+  return Math.max(.3,Math.ceil(area*1.2/140/10)/10);
+}
+const fmt=n=>String(n).replace(".",",");
+
+/* Patroondeel tekenen op maat: de vorm schaalt mee met jouw afmetingen */
+function pieceSVGfit(lib,sx,sy){
+  const inner=pieceSVG(lib).replace(/^<svg[^>]*>/,"").replace(/<\/svg>$/,"");
+  return `<svg viewBox="-6 -10 212 276" role="img" aria-label="Patroondeel ${esc(LIB[lib].naam)}"><g class="fitg" style="transform:scale(${sx.toFixed(3)},${sy.toFixed(3)})">${inner}<\/g><\/svg>`;
+}
+
+/* ================= Extra uitgewerkte patronen ================= */
+PATTERNS["08"]={niveau:2,
+  delen:[["kap","Kapsegment",6,"elk segment geborduurd"],["tailleband","Hoofdband",1,"de rand rond het hoofd"]],
+  gemaakt:"Het mutsje is een rond kapje uit zes driehoekige segmenten die bovenaan samenkomen. Voor de segmenten aan elkaar gezet werden, is elk deel met kruissteek geborduurd in kleurrijke motieven: krullen, sterretjes en bloemen. Een band werkt de rand af, en bovenop zit een wollen pompon.",
+  materiaal:["Zwarte wollen stof of vilt","Borduurwol in verschillende kleuren","Voering","Wol voor de pompon"],
+  stappen:["Teken je kruissteekmotieven op ruitjespapier: elk hokje is één kruisje.","Borduur elk segment voor je ze aan elkaar zet. Op een plat stuk stof borduurt het veel makkelijker.","Stik de segmenten twee aan twee aan elkaar, en daarna de twee helften.","Maak de voering op dezelfde manier en steek ze in de muts.","Stik de hoofdband rondom en vouw hem naar binnen.","Maak een pompon van wol en naai hem bovenop vast."],
+  termen:[["Kruissteek","Borduursteek in de vorm van een klein kruisje; samen vormen ze een motief, zoals pixels."],["Segment","Een van de gelijke delen waaruit een ronde vorm is opgebouwd."]]};
+PATTERNS["35"]={niveau:2,
+  delen:[["slip_voor","Voorpand",1,""],["slip_achter","Achterpand",1,""],["kruisstuk","Kruisstuk",2,"buitenkant en voering"],["tailleband","Tailleband (elastiek)",1,"breed elastiek met letters"]],
+  gemaakt:"Een herenslip bestaat uit een voor- en een achterpand, verbonden door een dubbel kruisstuk. De naden zijn gestikt met rekbare steken, zodat ze meerekken met de tricot. De tailleband is een breed elastiek met de merknaam erin geweven. De beenopeningen zijn afgewerkt met smal elastiek.",
+  materiaal:["Katoenen tricot met elastaan","Breed tailleband-elastiek","Smal elastiek voor de benen","Stretchnaald en rekbaar garen"],
+  stappen:["Knip voorpand, achterpand en twee kruisstukken uit tricot.","Leg het voorpand tussen de twee kruisstukken en stik. Doe hetzelfde met het achterpand: zo zitten de naden netjes binnenin.","Stik de zijnaden met een overlock- of zigzagsteek.","Zet smal elastiek aan de beenopeningen. Rek het licht mee terwijl je stikt, vouw om en stik nog eens.","Sluit het tailleband-elastiek tot een ring die iets kleiner is dan je taille.","Verdeel de ring en de slip in vieren, speld vast en stik met zigzag terwijl je het elastiek oprekt."],
+  termen:[["Tricot","Gebreide stof die rekt, zoals T-shirtstof."],["Overlocksteek","Steek die de rand tegelijk stikt en afwerkt, en meerekt met de stof."],["Kruisstuk","Het deel tussen de benen dat voor- en achterpand verbindt."]]};
+/* materiaallijsten van 30 en 31 zonder vaste hoeveelheden: die berekenen we nu op maat */
+PATTERNS["30"].materiaal=["Stevig katoen, linnen of fijne wol","Knopen (± 10)","Smal lint of veter voor de knie","Vlieseline voor tailleband en klep"];
+PATTERNS["31"].materiaal=["Stevige wollen stof","Voering","Soutache voor de krullen (± 15 m)","Rond koord voor de brandenburgs","Knopen (± 15)","Vlieseline voor kraag en voorpanden"];
+
+/* ================= Borduur- en haakpatronen (telpatronen) ================= */
+const CHART_DATA={"08": {"rows": ["YPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYY", "PWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW", "PWGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", "PWGBBBBBBBSSSSSSSSBBBBBBBBBBBBBBSSSSSSSSBBBBBBBGWP", "YWGBGBWBSSSSSBBSSSSSLBBBLBBBLBSSSSSBLSSSSSBWLGBGWY", "PWGBGGBSSSBBBWWWBBSSSBBBBBBBBSSSBBWWWBBBSSSBGGBGWP", "PWGBWGGSBBWWWWWWWWLBSSLBBBLBSSLBWWWWWWWWBBSGGWLGWP", "PWGBWSGOBWWBBBBBBWWWBSSBBBBSSBWWWBBBBBBWWBOGSWBGWP", "YWGWLSOBWWBOOOOOOBWWLBSBLBBSLBWWLOOOOOOBWWBOSBWGWY", "PWGWSSBWWBORRBBROOBWWBSSBBSSBWWBOORBBRROBWWBSSWGWP", "PWGBSOLWWORBBWWBBOOBWWLSBBSBWWLOOBLWWBLROWWBOSLGWP", "PWGBSOBWBRRBWWWWWBOBWWBSBBSBWWBOBWWWWWBRRBWBOSBGWP", "YWGBSOBWLRRWRRBWWBOOLWBSLBSBWBOOLWWBRRWRRBWBOSBGWY", "PWGBSOBWBRRBRRRBWBOOBWBSBBSBWBOOBWBRRRBRRBWBOSBGWP", "PWGBSOLWWBRRBRRBWBOOBWLSBBSBWBOOBWLRRBRRBWWBOSLGWP", "PWGWBOBWWBRRRRBWWBOOBWBSBBSBWBOOBWWBRRRRBWWBOBWGWP", "YWGWLOOBWWBBLBWWWBOOWWBSLBSBWWOOLWWWLBBBWWBOOBWGWY", "PWGWWBOOBWWWWWWWBOOBWWBSBBSBWWBOOBWWWWWWWBOOBWWGWP", "PWGWWBSOOBLWWWLBOOLWWBSBBBLSBWWBOOLBWWWBBOOSBWWGWP", "PWGBWWBOOOOOBOOOOBBWWBSBBBBSBWWBBOOOOBOOOOOBWWBGWP", "YWGBLWWBLOOOOOOOLWWWLSBBLBBBSBWWWBOOOOOOOBBWWBBGWY", "PWGBBBWWWBBBBBBWWWWBSBBBPBBBBSBWWWWBBBBBBWWWBBBGWP", "PWGBBBLBWWWWWWWWWBLSBBLPRBPBBBSBBWWWWWWWWWLBBBLGWP", "PWGBBBBBBBBWWWBBBSBBBBPRYBRPBBBBSBBBWWWBBBBBBBBGWP", "YWGBLBBBLBBBLBBBLBBBLPRYYBYRPBBBLBBBLBBBLBBBLBBGWY", "PWGBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBGWP", "PWGBBBLBBBLWWWLBBSLBBBPRYBRPBBLBSBLBWWWBBBLBBBLGWP", "PWGBBBBBWWWWWWWWWBBSBBBPRBPBBBSBBWWWWWWWWWBBBBBGWP", "YWGBLBWWWBBBLBBWWWWBSBBBPBBBLSBWWWWBLBBBLWWWLBBGWY", "PWGBBWWBBOOOOOOOBWWWBSBBBBBBSBWWWBOOOOOOOBBWWBBGWP", "PWGBWWLOOOOOBOOOOBLWWBSBBBLSBWWBBOOOOBOOOOOBWWLGWP", "PWGWWBSOOBBWWWBBOOBWWBSBBBBSBWWBOOBBWWWBBOOSBWWGWP", "YWGWWBOOLWWWWWWWLOOBWWBSLBSBWWBOOBWWWWWWWBOOLWWGWY", "PWGWBOOBWWBBBBWWWBOOWWBSBBSBWWOOBWWWBBBBWWBOOBWGWP", "PWGWBOLWWBRRRRLWWBOOBWLSBBSBWBOOBWWBRRRRBWWBOBWGWP", "PWGBSOBWWBRRBRRBWBOOBWBSBBSBWBOOBWBRRBRRBWWBOSBGWP", "YWGBSOBWLRRBRRRBWBOOLWBSLBSBWBOOLWBRRRBRRBWBOSBGWY", "PWGBSOBWBRRWRRBWWBOOBWBSBBSBWBOOBWWBRRWRRBWBOSBGWP", "PWGBSOLWBRRBWWWWWBOBWWLSBBSBWWLOBWWWWWLRRBWBOSLGWP", "PWGBSOBWWORBBWWBBOOBWWBSBBSBWWBOOBBWWBBROWWBOSBGWP", "YWGWSSBWWBORRBBROOBWWBSSLBSSLWWBOORBLRROLWWBSSWGWY", "PWGWBSOBWWBOOOOOOBWWBBSBBBBSBBWWBOOOOOOBWWBOSBWGWP", "PWGBWSGOBWWBBBLBBWWWBSSBBBLSSBWWWBLBBBLWWBOGSWLGWP", "PWGBWGGSBBWWWWWWWWBBSSBBBBBBSSBBWWWWWWWWBBSGGWBGWP", "YWGBGGBSSSBBLWWWLBSSSBBBLBBBLSSSLBWWWBBBSSSBGGBGWY", "PWGBGBWBSSSSSBBSSSSSBBBBBBBBBBSSSSSBBSSSSSBWBGBGWP", "PWGBBBLBBBSSSSSSSSLBBBLBBBLBBBLBSSSSSSSSBBLBBBLGWP", "PWGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", "YWGWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWGWY", "YWGPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPPYPPGYP"], "pal": {"B": ["Kobaltblauw", "#1f4fa8"], "L": ["Hemelsblauw", "#6fb0ea"], "R": ["Rood", "#d02a37"], "O": ["Oranje", "#f07a2a"], "S": ["Zalm", "#f6a27a"], "W": ["Wit", "#f6f2e6"], "G": ["Limoen", "#95d13c"], "P": ["Fuchsia", "#d93a7c"], "Y": ["Geel", "#f4c430"]}, "bg": "#1f4fa8", "bgname": "kobaltblauwe stof"}, "10": {"rows": ["GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", "Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.", "..SSS......SSS....OOO......OOO....SSS......SSS....OOO......OOO..", ".S...S....S...S..O...O....O...O..S...S....S...S..O...O....O...O.", ".S.O.S....S.O.S..O.S.O....O.S.O..S.O.S....S.O.S..O.S.O....O.S.O.", ".S..SS....SS..S..O..OO....OO..O..S..SS....SS..S..O..OO....OO..O.", "..S...SPPS...S....O...OPPO...O....S...SPPS...S....O...OPPO...O..", "...SS..PP..SS......OO..PP..OO......SS..PP..SS......OO..PP..OO...", ".....S.SS.S..........O.OO.O..........S.SS.S..........O.OO.O.....", "......SSSS............OOOO............SSSS............OOOO......", ".......SS..............OO..............SS..............OO.......", "....G..SS..G........G..OO..G........G..SS..G........G..OO..G....", "...GGG.SS.GGG......GGG.OO.GGG......GGG.SS.GGG......GGG.OO.GGG...", "....G..SS..G........G..OO..G........G..SS..G........G..OO..G....", ".....OOSSOO..........SSOOSS..........OOSSOO..........SSOOSS.....", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", "...P.......G.......C.......O.......P.......G.......C.......O....", "..PPP.....GGG.....CCC.....OOO.....PPP.....GGG.....CCC.....OOO...", ".PPYPPC..GGYGGC..CCPCCC..OOYOOC..PPYPPC..GGYGGC..CCPCCC..OOYOOC.", "..PPP.....GGG.....CCC.....OOO.....PPP.....GGG.....CCC.....OOO...", "...P.......G.......C.......O.......P.......G.......C.......O....", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", ".....OOSSOO..........SSOOSS..........OOSSOO..........SSOOSS.....", "....G..SS..G........G..OO..G........G..SS..G........G..OO..G....", "...GGG.SS.GGG......GGG.OO.GGG......GGG.SS.GGG......GGG.OO.GGG...", "....G..SS..G........G..OO..G........G..SS..G........G..OO..G....", ".......SS..............OO..............SS..............OO.......", "......SSSS............OOOO............SSSS............OOOO......", ".....S.SS.S..........O.OO.O..........S.SS.S..........O.OO.O.....", "...SS..PP..SS......OO..PP..OO......SS..PP..SS......OO..PP..OO...", "..S...SPPS...S....O...OPPO...O....S...SPPS...S....O...OPPO...O..", ".S..SS....SS..S..O..OO....OO..O..S..SS....SS..S..O..OO....OO..O.", ".S.O.S....S.O.S..O.S.O....O.S.O..S.O.S....S.O.S..O.S.O....O.S.O.", ".S...S....S...S..O...O....O...O..S...S....S...S..O...O....O...O.", "..SSS......SSS....OOO......OOO....SSS......SSS....OOO......OOO..", "Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.Y.", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"], "pal": {"S": ["Zalm", "#f0876a"], "O": ["Oranje", "#f26b21"], "P": ["Fuchsia", "#e0407e"], "G": ["Limoen", "#a8d84a"], "Y": ["Geel", "#f2c94c"], "C": ["Cr\u00e8me", "#eadcbc"]}, "bg": "#1b1b1b", "bgname": "zwarte wol"}, "21": {"rows": ["..............................................", "..............................................", "..............................................", "..............................................", "..............................................", ".................C............................", "......LBL........CCC....CCC...................", ".....LBLBL......CCCCC..CCCC...........BLB.....", ".....BLYLB......CCCWW.WWCCC..........BLBLB....", ".....LBLB.......CWWWWWWWWWC..........LBYBL....", "......L.L..CCCC.WWWWWWWWWWW..........BLBL.....", "..........CCCCWWWWWWWWWWWWWWWCCCC.....B.B.....", "...........CCCWWWWWWWWWWWWWWWCCCC.............", "...........CCWWWWWWWWWWWWWWWWWCC..............", "............CWWWWWWOYYOYWWWWWWCC..............", ".............WWWWWOYYOYYOWWWWWW...............", "............WWWWWWYYOYYOYWWWWWW...............", "..........CCWWWWWWYOYYOYYWWWWWWC..............", ".........CCCWWWWWWOYYOYYOWWWWWWCC.............", ".........CCCWWWWWWYYOYYOYWWWWWWCCC............", "..........CCCWWWWWWOYYOYWWWWWWCCCC..R.........", ".............WWWWWWWWWWWWWWWWWCC..............", "..............WWWWWWWWWWWWWWW.................", ".............CWWWWWWWWWWWWWWW.................", ".............CCWWWWWWWWWWWWWCC..........LBL...", ".......LBL...CCCCWWWWWWWWWCCCC.........LBLBL..", "......LBLBL..CCCC..WWWWW.CCCCC.........BLYLB..", "......BLYLB........CCCCC....CC.........LBLB...", "......LBLB.........CCCC.................L.L...", ".......L.L..........CC........................", "........G..GG.......G......G..R...............", ".........GGGgg......G.....Gg..................", "..........GGgggG....G....Ggg..................", "............GgggG..G....GggG....C.............", ".............GgggG.G....ggg.....CC..CC........", "..............GGgG.G...GggG....CWWWWWCC.......", "...............GGG.G...ggG...CCWWWWWWWC.......", ".................GGG...gG...CCWWWWWWWWWC......", "............R....GG....G....CWWWWYOYWWWWCC....", "..................GG.........WWWYOYYOWWWC.....", "..................GG.........WWWOYYOYWWW......", "...............GGGG.........CWWWYYOYYWWW......", ".............GgggGG........CCWWWWOYYWWWWC.....", "............Ggggg.G..........CWWWWWWWWWCC.....", "...........ggggg..G....GGG....CWWWWWWWCC......", "..........ggggG...G....GGggGG.CCWWWWWC........", "....LBL..GgggG....G.....GggggG.CC..CC.R.......", "...LBLBLGGGG......G.....GGgggggG....C.........", "...BLYLB..........G.......GGGgGgG.............", "...LBLB...........G.........GGGgGG............", "....L.L...........G.........GG.GGGG...........", "..................G.........G.GgggGGG.........", "..........R........G.......GGgggggG..GG.......", "...................G......GGggggG.............", "...................G.....G..G.................", "...................G....G....................."], "pal": {"W": ["Wit", "#fbfaf4"], "C": ["Cr\u00e8me", "#e8dcc0"], "E": ["Parelgrijs", "#c9c6bd"], "Y": ["Geel", "#f2c230"], "O": ["Oker", "#d9822b"], "G": ["Donkergroen", "#3f7d32"], "g": ["Lichtgroen", "#86b84a"], "B": ["Blauw", "#3f6fd1"], "L": ["Lichtblauw", "#8fb5f0"], "R": ["Rood", "#d0303f"]}, "bg": "#141414", "bgname": "zwart fluweel"}};
+const SYMS=["×","o","+","/","*","−","#","=","%","@","~","^"];
+function makeChart(key,bgKey){
+  const d=CHART_DATA[key],keys=Object.keys(d.pal).filter(k=>k!==bgKey),pal={};
+  keys.forEach((k,i)=>pal[k]={naam:d.pal[k][0],hex:d.pal[k][1],sym:SYMS[i%SYMS.length]});
+  return{w:d.rows[0].length,h:d.rows.length,rows:d.rows,pal,bg:d.bg,bgname:d.bgname,bgKey};
+}
+const isSt=(c,ch)=>ch!=="."&&ch!==c.bgKey&&!!c.pal[ch];
+function chartCounts(c){const n={};c.rows.forEach(r=>[...r].forEach(ch=>{if(isSt(c,ch))n[ch]=(n[ch]||0)+1}));return n}
+function shade(hex,f){const v=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));return "#"+v.map(x=>Math.max(0,Math.min(255,Math.round(x*f)))).map(x=>x.toString(16).padStart(2,"0")).join("")}
+const jit=(x,y)=>{const s=Math.sin(x*12.9898+y*78.233)*43758.5453;return s-Math.floor(s)};
+const textOn=hex=>{const v=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));return(v[0]*.3+v[1]*.59+v[2]*.11)>150?"#000":"#fff"};
+
+/* weergave 1: kruisjes op de stof */
+function chartStitchSVG(c,cell){
+  const W=c.w*cell,H=c.h*cell,m=cell*.2;let s=`<rect width="${W}" height="${H}" fill="${c.bg}"/>`;
+  c.rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(!isSt(c,ch))return;const col=shade(c.pal[ch].hex,.88+jit(x,y)*.24),x0=x*cell,y0=y*cell;
+    s+=`<path d="M${x0+m} ${y0+m}L${x0+cell-m} ${y0+cell-m}M${x0+cell-m} ${y0+m}L${x0+m} ${y0+cell-m}" stroke="${col}" stroke-width="${cell*.2}" stroke-linecap="round"/>`}));
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Voorbeeld van het borduurwerk in kruisjes">${s}<\/svg>`;
+}
+/* weergave 2: telpatroon met genummerde rijen en kolommen; mode "sym" (tekens) of "run" (telnummers per kleurreeks) */
+function runNumbers(row,isOn){const out=[];let n=0,prev=null;[...row].forEach((ch,i)=>{n=(ch===prev)?n+1:1;prev=ch;out.push(n)});return out}
+function chartGridSVG(c,cell,mode){
+  const M=cell*1.7,W=c.w*cell,H=c.h*cell,fs=cell*.55,step=cell>=13?1:5;let s=`<rect x="0" y="0" width="${W+2*M}" height="${H+2*M}" fill="#fff"/><g transform="translate(${M} ${M})">`;
+  c.rows.forEach((r,y)=>{const runs=runNumbers(r);[...r].forEach((ch,x)=>{
+    const on=isSt(c,ch),hex=on?c.pal[ch].hex:(mode==="run"?c.bg:"#fff");
+    if(on||mode==="run")s+=`<rect x="${x*cell}" y="${y*cell}" width="${cell}" height="${cell}" fill="${hex}"/>`;
+    const t=mode==="run"?runs[x]:(on?c.pal[ch].sym:"");
+    if(t!=="")s+=`<text x="${x*cell+cell/2}" y="${y*cell+cell*.7}" font-size="${mode==="run"?fs*.95:fs*1.15}" text-anchor="middle" fill="${textOn(hex)}" font-family="Golos Text, Arial, sans-serif">${t}<\/text>`;
+  })});
+  for(let x=0;x<=c.w;x++)s+=`<line x1="${x*cell}" y1="0" x2="${x*cell}" y2="${H}" stroke="${x%10===0?"#000":"#b8b8b8"}" stroke-width="${x%10===0?1.4:.5}"/>`;
+  for(let y=0;y<=c.h;y++)s+=`<line x1="0" y1="${y*cell}" x2="${W}" y2="${y*cell}" stroke="${y%10===0?"#000":"#b8b8b8"}" stroke-width="${y%10===0?1.4:.5}"/>`;
+  for(let x=0;x<c.w;x++)if((x+1)%step===0||x===0)[-.5,H/cell+.5].forEach(yy=>s+=`<text x="${x*cell+cell/2}" y="${yy*cell+fs*.4}" font-size="${fs}" text-anchor="middle" fill="#444" font-family="Golos Text, Arial, sans-serif">${x+1}<\/text>`);
+  for(let y=0;y<c.h;y++)if((y+1)%step===0||y===0)[-M/2,W+M/2].forEach(xx=>s+=`<text x="${xx}" y="${y*cell+cell*.68}" font-size="${fs}" text-anchor="middle" fill="#444" font-family="Golos Text, Arial, sans-serif">${y+1}<\/text>`);
+  return `<svg viewBox="0 0 ${W+2*M} ${H+2*M}" role="img" aria-label="Telpatroon">${s}<\/g><\/svg>`;
+}
+function chartLegend(c){const n=chartCounts(c);return Object.keys(c.pal).filter(k=>n[k]).map(k=>`<li><i style="background:${c.pal[k].hex}"><\/i><b class="sym">${c.pal[k].sym}<\/b>${c.pal[k].naam}<span>${n[k]} ${c.unit||"kruisjes"}<\/span><\/li>`).join("")}
+
+/* Haakpatroon voor mutsje 22: telpatroon van 12 steken breed, zoveel toeren als je maat vraagt */
+const HAAK_PAL={V:["Paars","#5b2a86"],D:["Blauwpaars","#3a2f8f"],M:["Lila","#9a4fb5"],R:["Rood","#c8102e"],O:["Oranje","#ef8a2b"]};
+function haakRows(R){
+  const rows=[];for(let r=0;r<R;r++){let row="";for(let x=0;x<24;x++){const k=r%16,w1=Math.round(1.5+1.5*Math.sin(2*Math.PI*x/12)),w2=Math.round(1.5+1.5*Math.sin(2*Math.PI*(x+6)/12));
+    let ch="V";
+    if(k>=1&&k<=4)ch=(k-1)>=w1?"R":"V";else if(k===5)ch="O";else if(k>=6&&k<=8)ch="D";else if(k===9)ch=x%3===0?"O":"R";
+    else if(k>=10&&k<=13)ch=(k-10)>=w2?"M":"V";else if(k===15)ch=x%4===0?"O":"V";
+    row+=ch}rows.push(row)}return rows;
+}
+function haak(Mm){
+  let S=Math.max(72,Math.round(Mm.hoofd*.97*1.6/12)*12);
+  const nInc=S/6,crownH=nInc/1.8,H=Mm.hoofd*.31,R=Math.max(10,Math.round((H-crownH)*1.8));
+  const rows=haakRows(R),pal={};Object.entries(HAAK_PAL).forEach(([k,[n,h]],i)=>pal[k]={naam:n,hex:h,sym:SYMS[i]});
+  const chart={w:24,h:R,rows,pal,bg:"#ffffff",bgname:"",bgKey:null,unit:"steken per herhaling"};
+  const crownSt=3*nInc*(nInc+1),rep=S/12,cnt={};rows.forEach(r=>[...r].forEach(ch=>cnt[ch]=(cnt[ch]||0)+rep/2));cnt.V=(cnt.V||0)+crownSt;cnt.R=(cnt.R||0)+S;
+  const tot=Object.values(cnt).reduce((a,b)=>a+b,0),gram=Math.round(S/1.6*(crownH+R/1.8)*.12);
+  const wol=Object.keys(HAAK_PAL).filter(k=>cnt[k]).map(k=>({naam:HAAK_PAL[k][0],gram:Math.max(5,Math.round(gram*cnt[k]/tot/5)*5)}));
+  const steps=[
+    "Maak eerst een proeflapje: 16 vasten en 18 toeren moeten samen 10 × 10 cm zijn. Is je lapje groter, neem dan een dunnere naald.",
+    "Begin bovenaan met paarse wol: haak 6 vasten in een magische ring.",
+    `Meerder in elke toer 6 vasten, gelijk verdeeld over de toer, tot je ${S} steken hebt. Dat zijn ${nInc} toeren.`,
+    `Haak daarna de ${R} toeren van het telpatroon in vasten. Elk vakje is één vaste. Herhaal de 12 steken van het patroon ${S/12} keer rond.`,
+    "Lees het telpatroon toer per toer van boven naar onder. Het cijfer in een vakje telt hoeveel steken je na elkaar in die kleur haakt.",
+    "Wissel van kleur in de laatste lus van de steek ervoor, en neem de draad die je niet gebruikt mee binnenin je steken (tapestry-haken).",
+    `Haak de schulprand in rood: *sla 2 steken over, haak 5 stokjes in de volgende steek, sla 2 steken over, 1 vaste in de volgende* (${S/6} schulpen).`,
+    "Werk alle draadjes weg en breng de muts met wat stoom in vorm."
+  ];
+  return{S,nInc,R,gram,wol,steps,chart};
+}
+function haakSVG(h){
+  const top=24,bottom=170,cr=Math.min(70,(bottom-top)*h.nInc/(h.nInc+h.R)),bodyTop=top+cr,rowH=(bottom-bodyTop)/h.R,cw=120/48;
+  let s=`<defs><clipPath id="hat"><path d="M40 ${bottom} L40 92 C 40 40, 70 ${top}, 100 ${top} C 130 ${top}, 160 40, 160 92 L160 ${bottom} Z"/><\/clipPath><\/defs><g clip-path="url(#hat)"><rect x="30" y="${top}" width="140" height="${bottom-top}" fill="${HAAK_PAL.V[1]}"/>`;
+  h.chart.rows.forEach((r,y)=>{for(let x=0;x<48;x++){const ch=r[x%24];if(ch!=="V")s+=`<rect x="${(40+x*cw).toFixed(2)}" y="${(bodyTop+y*rowH).toFixed(2)}" width="${(cw+.3).toFixed(2)}" height="${(rowH+.3).toFixed(2)}" fill="${HAAK_PAL[ch][1]}"/>`}});
+  s+=`<\/g>`;
+  const n=Math.min(10,Math.max(6,Math.round(h.S/12)));
+  for(let i=0;i<n;i++){const x=40+i*120/n;s+=`<path d="M${x.toFixed(1)} ${bottom} Q ${(x+60/n).toFixed(1)} ${bottom+16} ${(x+120/n).toFixed(1)} ${bottom} Z" fill="${HAAK_PAL.R[1]}"/>`}
+  s+=`<path d="M40 ${bottom} L40 92 C 40 40, 70 ${top}, 100 ${top} C 130 ${top}, 160 40, 160 92 L160 ${bottom}" fill="none" stroke="#000" stroke-width="1.5"/>`;
+  return `<svg viewBox="20 10 160 190" role="img" aria-label="Het gehaakte mutsje met jouw telpatroon">${s}<\/svg>`;
+}
+
+/* Welke stukken een borduur- of haakpatroon hebben */
+const EMB={
+  "08":{type:"kruissteek",titel:"Borduurpatroon",uitleg:"Vier slakkenhuisspiralen, zoals op het paneel van het originele mutsje. Eén vakje is één kruisje. De blauwe vakjes zijn de stof zelf: daar borduur je niet.",chart:makeChart("08","B")},
+  "10":{type:"kruissteek",titel:"Borduurpatroon",uitleg:"De band met krullen en sterretjes, zoals op het originele mutsje. Eén vakje is één kruisje. Herhaal het patroon tot de band rond je hoofd past.",chart:makeChart("10",null)},
+  "21":{type:"kruissteek",titel:"Borduurpatroon",uitleg:"De edelweiss met takjes en vergeet-mij-nietjes. Het origineel is in platsteek geborduurd; dit telpatroon vertaalt het naar kruissteek, wat makkelijker is om mee te beginnen.",chart:makeChart("21",null)},
+  "22":{type:"haak",titel:"Haakpatroon",uitleg:"Op maat van je hoofdomtrek. De aantallen en het aantal toeren veranderen mee als je je maat aanpast."}
+};
+
+/* Naaipatronen en uitleg voor de extra mutsen */
+PATTERNS["10"]={niveau:2,
+  delen:[["cirkel","Bovenkant",1,"rond, bovenop de muts"],["tailleband","Brede hoofdband",1,"hierop komt het borduurwerk"],["cirkel","Voering bovenkant",1,""]],
+  gemaakt:"Dit mutsje bestaat uit een ronde bovenkant en een brede band rond het hoofd. De band is helemaal met kruissteek geborduurd, in kronkels, sterren en zigzag. Bovenop zitten vier wollen pompons in rood en paars.",
+  materiaal:["Zwarte wollen stof","Borduurwol in rood, paars, geel, groen en wit","Voering","Wol voor vier pompons","Borduurnaald met grote oog"],
+  stappen:["Knip de hoofdband en borduur eerst het kruissteekpatroon erop, terwijl de band nog plat is.","Sluit de band tot een ring met een naad achteraan.","Rimpel de bovenkant licht in en stik hem aan de band.","Maak de voering op dezelfde manier en steek ze in de muts.","Maak vier pompons en naai ze bovenop vast."],
+  termen:[["Kruissteek","Borduursteek in de vorm van een klein kruisje; samen vormen ze een motief, zoals pixels."],["Pompon","Bolletje van samengebonden wollen draadjes."]]};
+PATTERNS["21"]={niveau:2,
+  delen:[["cirkel","Bovenkant baret",1,"met het edelweissborduursel"],["cirkel","Onderkant baret",1,"knip in het midden de hoofdopening uit"],["tailleband","Hoofdband",1,""]],
+  gemaakt:"Een baret is opgebouwd uit twee ronde stukken: een bovenkant en een onderkant met een opening voor het hoofd. De bovenkant is geborduurd met edelweiss, vergeet-mij-nietjes en blaadjes in platsteek en steelsteek. Een hoofdband werkt de opening af, en bovenop zit een klein steeltje.",
+  materiaal:["Zwart fluweel of wolvilt","Borduurgaren in wit, crème, geel, oker, twee tinten groen, twee tinten blauw en rood","Voering","Borduurring","Waste canvas (wegtrekbaar borduurgaas) om kruisjes op fluweel te tellen"],
+  stappen:["Rijg een stuk waste canvas op de bovenkant van de baret en span alles in een borduurring.","Borduur het telpatroon in kruissteek door het gaas heen. Maak het gaas daarna nat en trek de draadjes er een voor een uit.","Knip in de onderkant een cirkel uit voor je hoofd (je hoofdomtrek gedeeld door 3,14).","Stik boven- en onderkant rondom aan elkaar, goede kanten op elkaar, en keer.","Zet de hoofdband aan de opening.","Rol een strookje stof op tot een steeltje en naai het bovenop het midden."],
+  termen:[["Kruissteek","Borduursteek in de vorm van een klein kruisje; samen vormen ze een motief, zoals pixels."],["Telpatroon","Raster waarin elk vakje één steek is; je telt de vakjes om te weten waar je borduurt."],["Waste canvas","Gaas dat je tijdelijk op de stof legt om kruisjes te kunnen tellen, en daarna wegtrekt."]]};
+PATTERNS["22"]={niveau:2,delen:[],
+  gemaakt:"Dit klokvormige mutsje is gehaakt, in rondes vanaf het midden bovenaan. Eerst wordt er gemeerderd tot de kop groot genoeg is, daarna gaat het recht naar beneden. De golvende strepen zijn in verschillende kleuren gehaakt, waarbij de draad die je niet gebruikt mee binnenin de steken loopt. De rand is afgewerkt met schulpjes.",
+  materiaal:["Wol in paars, oranje en rood","Haaknaald 4 mm","Stopnaald om de draadjes weg te werken","Steekmarkeerder"],
+  get stappen(){return haak(M).steps},
+  termen:[["Vaste","De basissteek van het haken: kort en stevig."],["Meerderen","Twee steken in dezelfde steek haken, zodat het werk breder wordt."],["Tapestry-haken","Haken met meerdere kleuren tegelijk, waarbij je de draad die je niet gebruikt binnenin je steken meeneemt."],["Schulprand","Rand van halve boogjes, gemaakt van meerdere stokjes in één steek."]]};
+
+
+const CATS=[
+  {id:"broeken",naam:"Broeken",ids:["30","36"]},
+  {id:"mutsen",naam:"Mutsen",ids:["08","10","21","22"]},
+  {id:"jassen",naam:"Jassen",ids:["31","11","20","27","28","29","32","33","37","50","51"]},
+  {id:"ondergoed",naam:"Ondergoed",ids:["35","34","15"]}
+];
+const ICONS={
+  broeken:`<path d="M20 8h24l4 48H36l-4-30-4 30H16z"/><path d="M20 15h24"/><path d="M27 15v5M37 15v5"/>`,
+  mutsen:`<circle cx="32" cy="11" r="4.5"/><path d="M14 44c0-15 8-27 18-27s18 12 18 27"/><path d="M11 44h42v9H11z"/><path d="M19 44v9M26 44v9M33 44v9M40 44v9M47 44v9"/>`,
+  jassen:`<path d="M25 8l-13 6-6 21 8 2 3-9v35h30V28l3 9 8-2-6-21-13-6-7 9z"/><path d="M32 17v39"/><circle cx="35.5" cy="27" r="1.2"/><circle cx="35.5" cy="36" r="1.2"/><circle cx="35.5" cy="45" r="1.2"/><path d="M25 8l7 9M39 8l-7 9"/>`,
+  ondergoed:`<path d="M9 20h46v8l-15 6-4 15h-8l-4-15-15-6z"/><path d="M9 26h46"/><path d="M28 34c1 4 1 9 0 15M36 34c-1 4-1 9 0 15" stroke-width="1.6"/>`
+};
+const CAT_OF={};CATS.forEach(c=>c.ids.forEach(id=>CAT_OF[id]=c));
+const SCISSORS=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.6 7.6L20 18M8.6 16.4L20 6"/></svg>`;
+const LEVELS=["","beginner","gemiddeld","gevorderd"];
+
+/* ---------- opslag (alleen in deze browser) ---------- */
+const store={get(k,d){try{const v=localStorage.getItem("mis-"+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem("mis-"+k,JSON.stringify(v))}catch(e){}}};
+let M=Object.assign({},DEFAULT_M,store.get("maten",{}));
+const aiPatterns={};
+
+/* ================= Navigatie ================= */
+function go(name){if(location.hash.slice(1)===name)route();else location.hash=name}
+function route(){
+  const h=location.hash.slice(1)||"start";
+  let m;
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
+  const show=id=>document.getElementById(id).classList.add("on");
+  if(h==="elodie"||/^elodie-[a-z0-9]{4,8}$/.test(h)){show("elodie")}
+  else if(h==="resultaten"){if(!renderResults()){go("elodie");return}show("cat")}
+  else if((m=h.match(/^cat-(\w+)$/))&&CATS.find(c=>c.id===m[1])){renderCat(CATS.find(c=>c.id===m[1]));show("cat")}
+  else if((m=h.match(/^stuk-(\d\d)$/))&&BY_ID[m[1]]){renderPiece(BY_ID[m[1]]);show("stuk")}
+  else if((m=h.match(/^meten-(\d\d)$/))&&BY_ID[m[1]]){renderMeasure(BY_ID[m[1]]);show("meten")}
+  else if((m=h.match(/^maken-(\d\d)$/))&&BY_ID[m[1]]){if(patternOf(m[1])){renderHowto(BY_ID[m[1]]);show("maken")}else{go("stuk-"+m[1]);return}}
+  else show("start");
+  scrollTo(0,0);
+}
+addEventListener("hashchange",route);
+document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b)go(b.dataset.go)});
+const patternOf=id=>PATTERNS[id]||aiPatterns[id]||null;
+
+/* ================= 1. QR-code naar Élodie ================= */
+const ELODIE_BASE=IN_CLAUDE?"https://claude.ai/artifact/87pHKdcGXnFsbGtbkr3geA#":location.href.split("#")[0]+"#";
+function drawQR(url){
+  const b=document.getElementById("qrBtn");if(typeof qrcode!=="function")return;
+  try{const q=qrcode(0,"M");q.addData(url);q.make();b.innerHTML=q.createSvgTag({scalable:true,margin:0});b.classList.add("real")}catch(e){}
+}
+
+/* ================= 3. Categorie ================= */
+const cardHTML=(id,i)=>{const it=BY_ID[id];return `<button class="card" style="--i:${i}" data-go="stuk-${id}"><div class="ph"><img src="${it.img}" alt="${esc(it.title)}" loading="lazy">${PATTERNS[id]?`<span class="badge">Patroon klaar</span>`:""}</div><span class="t">${esc(it.title)}</span></button>`};
+function renderResults(){
+  const f=lastFind;if(!f||!f.ids.length)return false;
+  document.getElementById("catTitle").textContent=f.titel;
+  document.getElementById("catSub").textContent=`${f.antwoord?"“"+f.antwoord+"” · ":""}Gevonden door Élodie · ${f.ids.length} ${f.ids.length===1?"stuk":"stukken"}`;
+  const back=document.getElementById("catBack");back.dataset.go=ROLE==="scherm"?"start":"elodie";back.innerHTML=ROLE==="scherm"?"&larr; Nieuwe vraag aan Élodie":"&larr; Terug naar Élodie";
+  document.getElementById("cards").innerHTML=f.ids.map(cardHTML).join("");
+  return true;
+}
+function renderCat(c){
+  document.getElementById("catTitle").textContent=c.naam;
+  const n=c.ids.filter(id=>PATTERNS[id]).length;
+  document.getElementById("catSub").textContent=`${c.ids.length} stukken uit de MoMu-studiecollectie`;
+  document.getElementById("cards").innerHTML=c.ids.map(id=>{const it=BY_ID[id];return `<button class="card" style="--i:${c.ids.indexOf(id)}" data-go="stuk-${id}"><div class="ph"><img src="${it.img}" alt="${esc(it.title)}" loading="lazy">${PATTERNS[id]?`<span class="badge">Patroon klaar</span>`:""}</div><span class="t">${esc(it.title)}</span></button>`}).join("");
+}
+
+/* ================= 4. Het gekozen stuk ================= */
+function renderPiece(it){
+  const c=CAT_OF[it.id];
+  document.getElementById("stukBody").innerHTML=`
+    ${lastFind&&lastFind.ids.includes(it.id)?`<button class="back" data-go="resultaten">&larr; Terug naar je resultaten</button>`:c?`<button class="back" data-go="cat-${c.id}">&larr; Terug naar ${c.naam.toLowerCase()}</button>`:`<button class="back" data-go="elodie">&larr; Terug naar Élodie</button>`}
+    <div class="piece">
+      <svg class="thread" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true"><path class="st" vector-effect="non-scaling-stroke" d="M186 6 C236 -44 338 -40 404 30"/><path class="st" vector-effect="non-scaling-stroke" d="M962 394 C1022 432 948 482 992 566"/></svg>
+      <div class="bigphoto" id="bigPola"><i class="pinhead" aria-hidden="true"></i><div class="shot"><img src="${it.img}" alt="${esc(it.title)}"></div><div class="cap"><span>MoMu-studiecollectie</span><b>nr. ${it.id}</b></div></div>
+      <div class="pieceside">
+        <div class="card4 paper">
+          <h1>${esc(it.title)}</h1>
+          <p class="onpaper">${esc(it.desc)}</p>
+        </div>
+        <ul class="tags" aria-label="Onderdelen van dit stuk">${it.delen.split(", ").map((d,i)=>`<li style="--i:${i}">${esc(d)}</li>`).join("")}</ul>
+        <button class="pin" id="makeBtn" aria-label="Make it seamless: maak dit stuk zelf"><img src="assets/speldenkussen-make.png" alt="" width="334" height="251"></button>
+      </div>
+    </div>`;
+  (pola=>{if(!matchMedia("(hover:hover)").matches||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    pola.addEventListener("pointermove",e=>{const r=pola.getBoundingClientRect();pola.style.setProperty("--ry",(((e.clientX-r.left)/r.width-.5)*10).toFixed(2)+"deg");pola.style.setProperty("--rx",((.5-(e.clientY-r.top)/r.height)*8).toFixed(2)+"deg")});
+    pola.addEventListener("pointerleave",()=>{pola.style.setProperty("--rx","0deg");pola.style.setProperty("--ry","0deg")});
+  })(document.getElementById("bigPola"));
+  document.getElementById("makeBtn").addEventListener("click",()=>{if(!patternOf(it.id))buildAIPattern(it);go("meten-"+it.id)});
+}
+
+/* ================= AI ================= */
+const samplePromise=(window.claude&&window.claude.use)?window.claude.use("sample"):Promise.resolve(null);
+async function getSample(images){
+  const s=await samplePromise;if(!s)throw{code:"unavailable"};
+  if(images){try{const l=await s.limits();if(l&&!l.images)throw{code:"unavailable"}}catch(e){if(e&&e.code)throw e}}
+  return s;
+}
+const parseJSON=t=>{const m=(t||"").match(/\{[\s\S]*\}/);if(!m)throw{message:"geen antwoord"};return JSON.parse(m[0])};
+function errText(err,what){
+  const c=err&&err.code;
+  if(c==="unavailable")return `De AI werkt niet in deze weergave, dus ${what} lukt hier niet.`;
+  if(c==="not_granted")return "Je gaf de AI geen toestemming. Probeer opnieuw en kies toestaan.";
+  if(c==="rate_limited")return "Even te veel vragen na elkaar. Wacht een minuutje en probeer opnieuw.";
+  return "Er ging iets mis. Probeer het opnieuw.";
+}
+const pending={};
+function basisPatroon(it){
+  const t=it.tags,d=(it.delen||"").toLowerCase(),has=w=>d.includes(w);
+  const mouw=has("pof")&&has("ham")?"hammouw":has("hammouw")?"hammouw":has("pof")?"pofmouw":has("klok")?"klokmouw":"rechtemouw";
+  const kraag=has("matrozenkraag")?["matrozenkraag","Matrozenkraag",2,""]:has("ronde kraag")||has("brede ronde kraag")?["ronde_kraag","Kraag",2,"boven- en onderkraag"]:(has("kraag")||has("col"))?["opstaande_kraag","Staande kraag",1,""]:null;
+  const zonder=has("geen mouwen")||has("mouwloos");
+  let delen;
+  if(t.includes("broeken")||t.includes("ondergoed"))delen=[["broekvoor","Voorpand",2,""],["broekachter","Achterpand",2,""],["tailleband","Tailleband",1,""]].concat(has("klep")?[["klep","Klep",1,""]]:[]);
+  else if(t.includes("hoeden"))delen=[["kap","Kap",has("klok")?6:4,"naai de banen aan elkaar"],["tailleband","Hoofdband",1,"op je hoofdomtrek"]];
+  else if(t.includes("schorten"))delen=[["schortbaan","Schortbaan",1,""],["tailleband","Tailleband met koorden",1,""]].concat(has("zak")?[["zak","Opgestikte zak",1,""]]:[]).concat(has("mouw")?[["voorpand","Lijfje",1,""],[mouw,"Mouw",2,""]]:[]);
+  else if(t.includes("tassen"))delen=[["tas","Voor- en achterkant",2,""],["klep","Klep",1,""],["sjerp","Schouderband",1,""]];
+  else if(t.includes("schoenen"))delen=[["schoen_boven","Bovenstuk",2,"in leer of stevige stof"],["schoen_zool","Zool",2,""]];
+  else if(t.includes("jurken"))delen=[["jurkvoorpand","Voorpand",1,"op de stofvouw"],["jurkvoorpand","Achterpand",2,"sluiting midden achter"]].concat(zonder?[]:[[mouw,"Mouw",2,""]]).concat(kraag?[kraag]:[]).concat(has("plooi")?[["plooirok","Plooirok (baan)",2,""]]:[]);
+  else if(t.includes("jassen"))delen=has("cape")?[["cape","Cape",1,"op de stofvouw"]].concat(has("capuchon")?[["capuchon","Capuchon",2,""]]:[]):[["jasvoorpand","Voorpand",2,""],["achterpand","Achterpand",1,"op de stofvouw"]].concat(zonder?[]:[["tweedeligemouw","Bovenmouw",2,""],["rechtemouw","Ondermouw",2,""]]).concat(kraag?[kraag]:[]).concat(has("manchet")?[["manchet","Manchet",2,""]]:[]);
+  else delen=[["voorpand","Voorpand",1,"op de stofvouw"],["achterpand","Achterpand",1,"op de stofvouw"]].concat(zonder?[]:[[mouw,"Mouw",2,""]]).concat(kraag?[kraag]:[]).concat(has("manchet")?[["manchet","Manchet",2,""]]:[]);
+  const knopen=t.includes("knopen"),rits=t.includes("rits"),kant=t.includes("kant"),bord=t.includes("borduursel");
+  return {niveau:delen.length>5?3:delen.length>3?2:1,delen,
+    gemaakt:`Een vereenvoudigd basispatroon voor dit stuk, gemaakt uit de onderdelen die je erop ziet: ${it.delen}.`,
+    materiaal:["Hoofdstof naar keuze","Voering of katoen voor de binnenkant","Naaigaren in een passende kleur"].concat(knopen?["Knopen"]:[]).concat(rits?["Rits"]:[]).concat(kant?["Kant voor de afwerking"]:[]).concat(bord?["Borduurgaren"]:[]),
+    stappen:["Maak eerst een proefmodel in goedkope stof en pas het aan.","Knip alle delen uit je stof, let op de draadrichting.","Stik de grote delen aan elkaar en strijk de naden open.",delen.some(x=>/mouw/.test(x[0]))?"Zet de mouwen in.":"Werk de randen af met een zoom of bies.",kraag?"Zet de kraag op.":"Werk de hals of bovenkant af.",knopen?"Maak de knoopsgaten en zet de knopen.":rits?"Zet de rits in.":"Werk de zoom af en strijk alles mooi."],
+    termen:[["Draadrichting","De richting waarin de draden van de stof lopen; leg je patroondeel daarlangs."],["Naadwaarde","De extra stof langs de rand die je nodig hebt om te stikken."]]};
+}
+function buildAIPattern(it){
+  if(!IN_CLAUDE){const p=basisPatroon(it);aiPatterns[it.id]=p;return Promise.resolve(p)}
+  if(pending[it.id])return pending[it.id];
+  pending[it.id]=(async()=>{
+    const sample=await getSample(false);
+    const prompt=`Je bent docent patroontekenen en kledingconstructie. Een modestudent wil dit stuk uit de studiecollectie van MoMu thuis zelf maken.
+
+Stuk: ${it.title}
+Beschrijving: ${it.desc}
+Onderdelen: ${it.delen}
+
+Kies de patroondelen uit deze lijst (gebruik exact de id): ${LIB_IDS.map(id=>`${id} (${LIB[id].naam})`).join(", ")}.
+Is het geen genaaid stuk (bijvoorbeeld gehaakt of gebreid), geef dan de delen die het dichtst in de buurt komen als je het in stof zou naaien, en zeg dat in "gemaakt".
+
+Antwoord met alleen JSON, zonder uitleg ervoor of erna, in eenvoudig Nederlands:
+{"delen":[{"id":"<id uit de lijst>","naam":"naam van dit deel voor dit stuk","aantal":<hoe vaak knippen>,"noot":"korte opmerking, max 8 woorden"}],
+"gemaakt":"3 tot 4 zinnen over hoe dit stuk waarschijnlijk gemaakt is",
+"materiaal":["3 tot 6 materialen, zonder hoeveelheden voor de hoofdstof"],
+"niveau":<1 beginner, 2 gemiddeld of 3 gevorderd>,
+"stappen":["5 tot 7 korte stappen om het zelf te maken"],
+"termen":[["vakterm","korte uitleg"]]}
+Geef 2 tot 4 vaktermen. Verzin geen jaartallen of namen.`;
+    const res=await sample(prompt,{modelTier:"default"});
+    const d=parseJSON(res.text);
+    const p={auto:true,niveau:Math.max(1,Math.min(3,+d.niveau||2)),
+      delen:(d.delen||[]).filter(x=>x&&LIB[x.id]).slice(0,9).map(x=>[x.id,String(x.naam||LIB[x.id].naam),Math.max(1,Math.min(8,+x.aantal||1)),String(x.noot||"")]),
+      gemaakt:String(d.gemaakt||""),materiaal:(d.materiaal||[]).map(String).slice(0,7),stappen:(d.stappen||[]).map(String).slice(0,9),
+      termen:(d.termen||[]).filter(Array.isArray).map(t=>[String(t[0]),String(t[1]||"")]).slice(0,5)};
+    if(!p.delen.length)throw{message:"geen patroondelen"};
+    aiPatterns[it.id]=p;return p;
+  })();
+  pending[it.id].catch(()=>{delete pending[it.id]});
+  return pending[it.id];
+}
+
+/* ================= 5. Opmeten: live camera met lichaamsherkenning, foto als reserve ================= */
+const MP_BASE="mediapipe";  /* bibliotheek staat naast index.html */
+const MP_MODEL="https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+let photo=null,lines=null,curItem=null;
+let cam={stream:null,raf:0,state:"uit",samples:[],okFrames:0,countStart:0};
+let mp=null;
+
+function needed(it){const c=CAT_OF[it.id];return CAT_MEASURES[c?c.id:"jassen"]}
+
+function renderMeasure(it){
+  stopCamera();curItem=it;const keys=needed(it);
+  document.getElementById("metenBody").innerHTML=`
+    <button class="back" data-go="stuk-${it.id}">&larr; Terug naar het stuk</button>
+    <div class="measure">
+      <div>
+        <div class="spiegel"><div class="cam" id="cam">
+          ${photo?`<img id="camImg" src="${photo}" alt="Jouw foto">`:`<img id="camImg" alt="" hidden>`}
+          <video id="video" playsinline muted hidden></video>
+          <canvas id="overlay" hidden></canvas>
+          <svg class="over" id="over" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <button class="camstart" id="camStart" ${photo?"hidden":""}><span>Ga voor de<br>spiegel staan</span><small>Tik om de camera te starten</small></button>
+          <p class="camstatus" id="camStatus" hidden></p>
+          <span class="count" id="camCount" hidden></span>
+        </div><img class="spiegel-lijst" src="img/spiegel-ovaal.png" alt="" width="540" height="900"></div>
+        <div class="camctl">
+          <button class="ctl" id="btnRe" hidden>Opnieuw meten</button>
+          <button class="ctl" id="btnStop" hidden>Camera uit</button>
+          <button class="ctl" id="btnPhoto">Of kies een foto</button>
+        </div>
+        <p class="camnote">Ga op 2 à 3 meter staan, van top tot teen in beeld, met je armen een beetje van je lichaam. Strakke kleren geven de beste maten. Je beeld blijft in je browser. Controleer de maten altijd met een meetlint.</p>
+        <p class="msg" id="camMsg"></p>
+        <div class="sliders" id="sliders">${keys.map(k=>{const s=MEASURES[k];return `<div class="sl" id="sl-${k}"><label for="r-${k}">${s.label}${k==="lengte"?" <small>(nodig als schaal)</small>":""}</label><output id="o-${k}">${fmt(M[k])} cm</output><input type="range" id="r-${k}" data-k="${k}" min="${s.min}" max="${s.max}" step="0.5" value="${M[k]}"></div>`}).join("")}</div>
+      </div>
+      <div class="patterns">
+        <h2>De patronen</h2>
+        <p class="sub">Getekend op jouw maten. Verander een maat en kijk hoe de delen meegroeien.</p>
+        <div id="ptiles"></div>
+        <div class="legend"><span><i style="border-top:2px solid #000"></i>snijlijn</span><span><i style="border-top:2px dashed #000"></i>stiklijn</span><span><i style="border-top:2px solid #1d6a55"></i>draadrichting</span><span><i style="border-top:3px dashed #c0392b"></i>stofvouw, inrimpelen</span></div>
+        <div class="dlrow"><button class="dl" id="dlBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Download je patroon (PDF)</button><p class="dlmsg" id="dlMsg" role="status"></p></div>
+        <button class="tohow" id="toHow" aria-label="Naar het stappenplan" hidden><img src="assets/speldenkussen-stappen.png" alt="" width="304" height="225"></button>
+      </div>
+    </div>`;
+  drawLines();
+  document.getElementById("camStart").addEventListener("click",startCamera);
+  document.getElementById("btnRe").addEventListener("click",()=>{if(cam.stream){cam.state="zoek";cam.samples=[];cam.okFrames=0;loop()}else startCamera()});
+  document.getElementById("btnStop").addEventListener("click",()=>{stopCamera();setCtl()});
+  document.getElementById("btnPhoto").addEventListener("click",()=>{stopCamera();setCtl();const f=document.getElementById("photoIn");f.value="";f.click()});
+  document.getElementById("sliders").addEventListener("input",e=>{const k=e.target.dataset.k;if(!k)return;setM(k,+e.target.value,false)});
+  document.getElementById("toHow").addEventListener("click",()=>go("maken-"+it.id));
+  document.getElementById("dlBtn").addEventListener("click",e=>downloadPattern(it,e.currentTarget,document.getElementById("dlMsg")));
+  const p=patternOf(it.id);
+  if(p)renderTiles(p);
+  else{
+    document.getElementById("ptiles").innerHTML=`<div class="loading"><span class="spin"></span>Ik haal het stuk uit elkaar en teken de patronen…</div>`;
+    buildAIPattern(it).then(pp=>{if(curItem===it&&location.hash==="#meten-"+it.id)renderTiles(pp)})
+      .catch(err=>{if(curItem===it)document.getElementById("ptiles").innerHTML=`<p class="msg">${esc(errText(err,"het patroon opstellen"))}</p>`});
+  }
+}
+function setM(k,v,flash){
+  const s=MEASURES[k];if(!s||!isFinite(v))return;
+  M[k]=Math.round(Math.max(s.min,Math.min(s.max,v))*2)/2;store.set("maten",M);
+  const r=document.getElementById("r-"+k),o=document.getElementById("o-"+k);
+  if(r){r.value=M[k];o.textContent=fmt(M[k])+" cm";if(flash){const row=document.getElementById("sl-"+k);row.classList.remove("flash");void row.offsetWidth;row.classList.add("flash")}}
+  updateTiles();
+}
+function embPreview(id){
+  const e=EMB[id];if(!e)return"";
+  if(e.type==="kruissteek")return `<div class="embprev"><h3>${e.titel}</h3><div class="chartbox">${chartStitchSVG(e.chart,10)}</div><p>${esc(e.uitleg)} Het volledige telpatroon vind je in het stappenplan en in je PDF.</p></div>`;
+  if(e.type==="haak")return `<div class="embprev haak"><div class="hat" id="hatSvg"></div><div><p>${esc(e.uitleg)}</p><dl class="nums" id="haakNums"></dl></div></div>`;
+  return"";
+}
+function updateHaak(){
+  const box=document.getElementById("haakNums");if(!box)return;const h=haak(M);
+  document.getElementById("hatSvg").innerHTML=haakSVG(h);
+  box.innerHTML=`<div><dt>Start</dt><dd>6 vasten in een ring</dd></div><div><dt>Meerderen tot</dt><dd>${h.S} steken</dd></div><div><dt>Toeren in totaal</dt><dd>${h.nInc+h.R}</dd></div><div><dt>Wol</dt><dd>± ${h.gram} g</dd></div>`;
+}
+function renderTiles(p){
+  const id=curItem.id,hasPieces=p.delen.length>0;
+  document.querySelector("#metenBody .patterns h2").textContent=hasPieces?"De patronen":"Haakpatroon";
+  document.querySelector("#metenBody .patterns .sub").textContent=hasPieces?"Getekend op jouw maten. Verander een maat en kijk hoe de delen meegroeien.":"Op maat van je hoofdomtrek. Verander je maat en kijk hoe de aantallen meeveranderen.";
+  document.querySelector("#metenBody .legend").hidden=!hasPieces;
+  document.getElementById("ptiles").innerHTML=(hasPieces?`<div class="ptiles">${p.delen.map(([lib,naam,aantal],i)=>`<div class="ptile"><div class="art" id="art-${i}">${pieceSVGfit(lib,1,1)}</div><div class="cap"><b>${esc(naam)}</b><span class="size" id="sz-${i}"></span><span>Knip ${aantal}x${LIB[lib].fold&&aantal===1?" op de stofvouw":""}</span></div></div>`).join("")}</div>`:"")+embPreview(id)+(p.auto?`<p class="auto">Patroonkeuze automatisch opgesteld door AI.</p>`:"");
+  document.getElementById("toHow").hidden=false;document.getElementById("dlBtn").hidden=false;
+  updateTiles();
+}
+function updateTiles(){
+  const p=curItem&&patternOf(curItem.id);if(!p)return;
+  updateHaak();
+  p.delen.forEach(([lib,naam],i)=>{
+    const[w,h]=dimsFor(lib,naam,M),[w0,h0]=dimsFor(lib,naam,DEFAULT_M);
+    const g=document.querySelector(`#art-${i} .fitg`),sz=document.getElementById("sz-"+i);
+    if(g)g.style.transform=`scale(${Math.max(.7,Math.min(1.3,w/w0)).toFixed(3)},${Math.max(.7,Math.min(1.3,h/h0)).toFixed(3)})`;
+    if(sz)sz.textContent=`${fmt(w)} × ${fmt(h)} cm`;
+  });
+}
+/* silhouet en meetlijnen als er geen camera of foto is, of de lijnen van een foto */
+function drawLines(){
+  const svg=document.getElementById("over");if(!svg)return;
+  if(cam.stream){svg.innerHTML="";return}
+  const keys=needed(curItem);
+  const L=lines||(photo?null:{hoofd:[10,42,58],schouder:[22,33,67],borst:[29,35,65],taille:[41,37,63],heup:[51,34,66]});
+  let s="";
+  if(!photo)s+=`<g fill="none" stroke="#000" stroke-width=".5" opacity=".55"><ellipse cx="50" cy="10" rx="6" ry="6.5"/><path d="M44 17 Q50 19 56 17 L67 22 Q70 38 71 52 L67 52 Q65 40 63 30 L63 52 Q64 70 60 92 L54 92 L51 58 L49 58 L46 92 L40 92 Q36 70 37 52 L37 30 Q35 40 33 52 L29 52 Q30 38 33 22 Z"/></g>`;
+  if(L)keys.forEach(k=>{const v=L[k];if(!v)return;const[y,x1,x2]=v;s+=`<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#000" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>`});
+  svg.innerHTML=s;
+}
+function status(t){const el=document.getElementById("camStatus");if(!el)return;el.hidden=!t;el.textContent=t||""}
+function setCtl(){
+  const on=!!cam.stream,re=document.getElementById("btnRe"),st=document.getElementById("btnStop"),start=document.getElementById("camStart");
+  if(!re)return;
+  re.hidden=!(on&&cam.state==="klaar");st.hidden=!on;
+  start.hidden=on||!!photo;
+  document.getElementById("video").hidden=!on;document.getElementById("overlay").hidden=!on;
+  const img=document.getElementById("camImg");if(img)img.hidden=on||!photo;
+  if(!on){status("");const c=document.getElementById("camCount");if(c)c.hidden=true}
+  drawLines();
+}
+
+/* ---------- camera ---------- */
+async function loadPose(mode){
+  if(!mp){
+    const m=await import(`./${MP_BASE}/vision_bundle.mjs`);
+    const fs=await m.FilesetResolver.forVisionTasks(`${new URL(MP_BASE,location.href).href}/wasm`);
+    const opts=d=>({baseOptions:{modelAssetPath:MP_MODEL,delegate:d},runningMode:mode,numPoses:1,outputSegmentationMasks:true});
+    let pose;try{pose=await m.PoseLandmarker.createFromOptions(fs,opts("GPU"))}catch(e){pose=await m.PoseLandmarker.createFromOptions(fs,opts("CPU"))}
+    mp={pose,mode};
+  }else if(mp.mode!==mode){await mp.pose.setOptions({runningMode:mode});mp.mode=mode}
+  return mp.pose;
+}
+async function startCamera(){
+  const msg=document.getElementById("camMsg");msg.textContent="";
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    msg.textContent=IN_CLAUDE?"Op Claude mag een pagina de camera niet gebruiken. Open de losse versie van de site om met de camera te meten, of kies een foto.":"Deze browser kan de camera niet gebruiken. Kies een foto, of stel je maten zelf in.";return;
+  }
+  status("De camera vraagt om toestemming…");document.getElementById("camStart").hidden=true;
+  try{
+    cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:960}},audio:false});
+  }catch(e){
+    cam.stream=null;setCtl();
+    msg.textContent=IN_CLAUDE?"Op Claude mag een pagina de camera niet gebruiken. Open de losse versie van de site om met de camera te meten, of kies een foto."
+      :(e&&e.name==="NotAllowedError")?"Je gaf geen toestemming voor de camera. Je kunt dat aanpassen in je browser, of een foto kiezen.":"De camera kon niet starten. Kies een foto, of stel je maten zelf in.";
+    return;
+  }
+  const v=document.getElementById("video");v.srcObject=cam.stream;
+  photo=null;lines=null;setCtl();
+  try{await v.play()}catch(e){}
+  status("Lichaamsherkenning wordt geladen…");
+  try{await loadPose("VIDEO")}catch(e){status("");msg.textContent="De lichaamsherkenning kon niet laden. Controleer je internetverbinding, of stel je maten zelf in met de schuifjes.";return}
+  cam.state="zoek";cam.samples=[];cam.okFrames=0;loop();
+}
+function stopCamera(){
+  cancelAnimationFrame(cam.raf);
+  if(cam.stream){cam.stream.getTracks().forEach(t=>t.stop());cam.stream=null}
+  cam.state="uit";
+}
+addEventListener("hashchange",()=>{if(!location.hash.startsWith("#meten-"))stopCamera()});
+
+let lastTs=0;
+function loop(){
+  cancelAnimationFrame(cam.raf);
+  const v=document.getElementById("video"),cv=document.getElementById("overlay");
+  if(!cam.stream||!v||!mp)return;
+  const step=()=>{
+    if(!cam.stream||cam.state==="klaar")return;
+    if(v.readyState>=2&&v.videoWidth){
+      const W=v.videoWidth,H=v.videoHeight;
+      if(cv.width!==W){cv.width=W;cv.height=H}
+      let ts=performance.now();if(ts<=lastTs)ts=lastTs+1;lastTs=ts;
+      mp.pose.detectForVideo(v,ts,res=>onPose(res,W,H,cv));
+    }
+    cam.raf=requestAnimationFrame(step);
+  };
+  cam.raf=requestAnimationFrame(step);
+}
+const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
+function onPose(res,W,H,cv){
+  const ctx=cv.getContext("2d");ctx.clearRect(0,0,W,H);
+  const lm=res.landmarks&&res.landmarks[0];
+  if(!lm){status("Ik zie nog niemand. Ga voor de camera staan.");cam.okFrames=0;return}
+  const mask=res.segmentationMasks&&res.segmentationMasks[0];
+  const m=measureFrom(lm,mask?mask.getAsFloat32Array():null,mask?mask.width:0,mask?mask.height:0,W,H);
+  /* skelet tekenen */
+  ctx.lineWidth=Math.max(3,W/250);ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineCap="round";
+  BONES.forEach(([a,b])=>{if((lm[a].visibility??1)>.4&&(lm[b].visibility??1)>.4){ctx.beginPath();ctx.moveTo(lm[a].x*W,lm[a].y*H);ctx.lineTo(lm[b].x*W,lm[b].y*H);ctx.stroke()}});
+  ctx.fillStyle="#000";lm.forEach((p,i)=>{if(i>10&&i<29&&(p.visibility??1)>.4){ctx.beginPath();ctx.arc(p.x*W,p.y*H,ctx.lineWidth*1.3,0,7);ctx.fill()}});
+  if(m.rows){ctx.setLineDash([12,8]);ctx.lineWidth=Math.max(2,W/400);ctx.strokeStyle="#000";m.rows.forEach(([y,x1,x2])=>{ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke()});ctx.setLineDash([])}
+  if(!m.ok){status(m.reason);cam.okFrames=0;cam.samples=[];document.getElementById("camCount").hidden=true;if(cam.state==="tel")cam.state="zoek";return}
+  cam.okFrames++;
+  if(cam.state==="zoek"){status("Perfect, blijf zo staan…");if(cam.okFrames>12){cam.state="tel";cam.countStart=performance.now();cam.samples=[]}}
+  if(cam.state==="tel"){
+    cam.samples.push(m.maten);
+    const left=3-Math.floor((performance.now()-cam.countStart)/1000),c=document.getElementById("camCount");
+    if(left>0){c.hidden=false;c.textContent=left;status("Blijf stilstaan, ik meet…")}
+    else{c.hidden=true;finishMeasure()}
+  }
+}
+function median(a){a=a.filter(x=>x&&isFinite(x)).sort((p,q)=>p-q);return a.length?a[Math.floor(a.length/2)]:null}
+function finishMeasure(){
+  cam.state="klaar";cancelAnimationFrame(cam.raf);
+  const keys=needed(curItem),got=[];
+  ["borst","taille","heup","schouder","arm","hoofd"].forEach(k=>{const v=median(cam.samples.map(s=>s[k]));if(v){if(keys.includes(k)){setM(k,v,true);got.push(k)}else M[k]=Math.round(Math.max(MEASURES[k].min,Math.min(MEASURES[k].max,v))*2)/2}});
+  store.set("maten",M);
+  status("Gemeten! Kijk je maten na en schuif bij waar nodig.");setCtl();
+  document.getElementById("camMsg").textContent=got.length?"":"Ik kon je maten niet goed zien. Probeer opnieuw met wat meer licht, of stel ze zelf in.";
+}
+
+/* Maten berekenen uit de lichaamspunten (genormaliseerd) en het silhouet (masker) */
+function measureFrom(lm,mask,mw,mh,W,H){
+  const vis=i=>lm[i]&&(lm[i].visibility??1)>.5;
+  const P=i=>({x:lm[i].x*W,y:lm[i].y*H});
+  if(![11,12,23,24].every(vis))return{ok:false,reason:"Ga recht voor de camera staan, met je gezicht naar me toe."};
+  if(![27,28].every(vis)||Math.max(lm[27].y,lm[28].y)>.99)return{ok:false,reason:"Ga verder achteruit tot je van top tot teen in beeld staat."};
+  const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  /* bovenkant van het hoofd: eerste rij van het silhouet boven de neus */
+  let top=null;
+  if(mask){const nx=Math.round(lm[0].x*mw),band=Math.round(mw*.06);
+    for(let y=0;y<mh&&top==null;y++)for(let x=Math.max(0,nx-band);x<Math.min(mw,nx+band);x++)if(mask[y*mw+x]>.5){top=y/mh*H;break}}
+  if(top==null)top=P(0).y-(P(24).y-P(12).y)*.3;
+  if(top<H*.01)return{ok:false,reason:"Je hoofd valt net buiten beeld. Ga iets verder achteruit."};
+  const feet=Math.max(...[27,28,29,30,31,32].filter(vis).map(i=>P(i).y));
+  const px=feet-top;
+  if(px<H*.45)return{ok:false,reason:"Kom iets dichterbij, je staat nog te klein in beeld."};
+  const cm=M.lengte/px;
+  const shY=(P(11).y+P(12).y)/2,hipY=(P(23).y+P(24).y)/2,cx=(P(23).x+P(24).x)/2,torso=hipY-shY;
+  const rows=[];
+  const widthAt=yPix=>{
+    if(!mask)return null;const my=Math.round(yPix/H*mh),mx=Math.round(cx/W*mw);
+    if(my<0||my>=mh||mask[my*mw+mx]<=.5)return null;
+    let l=mx,r=mx;while(l>0&&mask[my*mw+l-1]>.5)l--;while(r<mw-1&&mask[my*mw+r+1]>.5)r++;
+    rows.push([yPix,l/mw*W,(r+1)/mw*W]);return(r-l+1)/mw*W*cm;
+  };
+  const bw=widthAt(shY+torso*.28),tw=widthAt(shY+torso*.62),hw=widthAt(hipY+torso*.1);
+  const arm=vis(13)&&vis(15)&&vis(14)&&vis(16)?((d(P(11),P(13))+d(P(13),P(15)))+(d(P(12),P(14))+d(P(14),P(16))))/2*cm*1.05:null;
+  const head=vis(7)&&vis(8)?d(P(7),P(8))*cm*3.6:null;
+  return{ok:true,rows,maten:{schouder:d(P(11),P(12))*cm*1.15,arm,borst:bw&&bw*2.7,taille:tw&&tw*2.75,heup:hw&&hw*2.7,hoofd:head}};
+}
+
+/* ---------- foto als reserve ---------- */
+document.getElementById("photoIn").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0];if(!f||!curItem)return;
+  const camEl=document.getElementById("cam"),msg=document.getElementById("camMsg");msg.textContent="";
+  let small;try{small=await shrink(f)}catch(err){msg.textContent="Deze foto kan ik niet openen. Probeer een JPG of PNG.";return}
+  stopCamera();photo=small.url;lines=null;
+  const img=document.getElementById("camImg");img.src=photo;img.alt="Jouw foto";setCtl();
+  camEl.classList.add("busy");
+  try{
+    if(IN_CLAUDE)await measurePhotoAI(small);else await measurePhotoPose(small);
+  }catch(err){msg.textContent=(err&&err.text)||errText(err,"maten nemen met een foto")+" Je kunt je maten ook zelf instellen met de schuifjes."}
+  finally{camEl.classList.remove("busy")}
+});
+async function measurePhotoAI(small){
+  const msg=document.getElementById("camMsg");
+  const sample=await getSample(true);
+  const prompt=`Je helpt een modestudent haar lichaamsmaten te nemen om een kledingpatroon op maat te tekenen. Op de foto staat een persoon, liefst van voren en van top tot teen. De persoon is ${M.lengte} cm lang: gebruik dat als schaal.
+
+Schat in centimeter: borst (omtrek), taille (omtrek), heup (omtrek), schouder (breedte van schouderpunt tot schouderpunt), arm (lengte van schouder tot pols), hoofd (omtrek).
+Geef ook waar de meetlijnen op de foto liggen, in procent van de breedte en hoogte van de foto (0 is links of boven, 100 is rechts of onder): voor hoofd, schouder, borst, taille en heup telkens [y, x links, x rechts].
+
+Antwoord met alleen JSON:
+{"zichtbaar":true of false,"opmerking":"korte tip in het Nederlands als de foto niet goed is, anders leeg","maten":{"borst":0,"taille":0,"heup":0,"schouder":0,"arm":0,"hoofd":0},"lijnen":{"hoofd":[y,x1,x2],"schouder":[y,x1,x2],"borst":[y,x1,x2],"taille":[y,x1,x2],"heup":[y,x1,x2]}}
+Staat er geen persoon op, zet zichtbaar op false.`;
+  const res=await sample(prompt,{images:[small.blob],modelTier:"default"});
+  const d=parseJSON(res.text);
+  if(!d.zichtbaar){msg.textContent=d.opmerking||"Ik zie niemand van top tot teen. Probeer een foto waarop je recht staat, van voren.";return}
+  applyMaten(d.maten||{});
+  lines={};Object.entries(d.lijnen||{}).forEach(([k,v])=>{if(Array.isArray(v)&&v.length===3&&v.every(n=>isFinite(+n)))lines[k]=v.map(n=>Math.max(0,Math.min(100,+n)))});
+  drawLines();
+  msg.textContent=(d.opmerking?d.opmerking+" ":"")+"Je maten zijn geschat. Kijk ze na met een meetlint en schuif bij waar nodig.";
+}
+async function measurePhotoPose(small){
+  const msg=document.getElementById("camMsg");
+  let pose;try{pose=await loadPose("IMAGE")}catch(e){throw{text:"De lichaamsherkenning kon niet laden. Stel je maten zelf in met de schuifjes."}}
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=small.url});
+  const W=img.naturalWidth,H=img.naturalHeight;let m=null;
+  pose.detect(img,res=>{const lm=res.landmarks&&res.landmarks[0];if(!lm)return;const mask=res.segmentationMasks&&res.segmentationMasks[0];m=measureFrom(lm,mask?mask.getAsFloat32Array():null,mask?mask.width:0,mask?mask.height:0,W,H)});
+  if(!m){msg.textContent="Ik zie niemand op de foto. Probeer een foto waarop je recht staat, van voren.";return}
+  if(!m.ok){msg.textContent=m.reason;return}
+  applyMaten(m.maten);
+  lines={};const names=["borst","taille","heup"];(m.rows||[]).forEach((r,i)=>{if(names[i])lines[names[i]]=[r[0]/H*100,r[1]/W*100,r[2]/W*100]});
+  drawLines();
+  msg.textContent="Je maten zijn geschat. Kijk ze na met een meetlint en schuif bij waar nodig.";
+}
+function applyMaten(maten){
+  const keys=needed(curItem);
+  Object.entries(maten).forEach(([k,v])=>{v=+v;if(!MEASURES[k]||!v)return;if(keys.includes(k))setM(k,v,true);else M[k]=Math.round(Math.max(MEASURES[k].min,Math.min(MEASURES[k].max,v))*2)/2});
+  store.set("maten",M);
+}
+async function shrink(file){
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+  const k=Math.min(1,1024/Math.max(img.width,img.height)),c=document.createElement("canvas");
+  c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.85));
+  return{blob,url:c.toDataURL("image/jpeg",.8)};
+}
+
+/* ================= Patroon downloaden: PDF op ware grootte, verdeeld over A4-bladen ================= */
+const JSPDF_SRC=IN_CLAUDE?"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js":"lib/jspdf.umd.min.js";
+const downloadsPromise=IN_CLAUDE?window.claude.use("downloads"):Promise.resolve(null);
+async function loadJsPDF(){
+  if(window.jspdf)return window.jspdf.jsPDF;
+  await new Promise((res,rej)=>{const s=document.createElement("script");s.src=JSPDF_SRC;s.onload=res;s.onerror=rej;document.head.appendChild(s)});
+  return window.jspdf.jsPDF;
+}
+const NS="http://www.w3.org/2000/svg";
+function pathBBox(d){
+  const svg=document.createElementNS(NS,"svg");svg.setAttribute("style","position:absolute;width:0;height:0;visibility:hidden");
+  const p=document.createElementNS(NS,"path");p.setAttribute("d",d);svg.appendChild(p);document.body.appendChild(svg);
+  const b=p.getBBox();svg.remove();return b;
+}
+const slugify=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+
+/* Patroondelen op een groot vel leggen (in mm), rij per rij */
+function layoutPieces(p){
+  const GAP=15,pieces=p.delen.map(([lib,naam,aantal])=>{const[w,h]=dimsFor(lib,naam,M);return{lib,naam,aantal,w:w*10,h:h*10,wcm:w,hcm:h}});
+  const maxW=Math.max(...pieces.map(x=>x.w));
+  const cols=Math.max(2,Math.ceil((maxW+2*GAP)/190)),W=cols*190;
+  const sorted=[...pieces].sort((a,b)=>b.h-a.h);
+  let x=GAP,y=GAP,rowH=0;
+  sorted.forEach(pc=>{if(x+pc.w+GAP>W){x=GAP;y+=rowH+GAP;rowH=0}pc.x=x;pc.y=y;x+=pc.w+GAP;rowH=Math.max(rowH,pc.h)});
+  const H=y+rowH+GAP;
+  return{pieces,cols,rows:Math.ceil(H/277),W,H};
+}
+function drawPiece(ctx,pc,title){
+  const L=LIB[pc.lib],b=pathBBox(L.d);
+  const m=new DOMMatrix().translate(pc.x,pc.y).scale(pc.w/b.width,pc.h/b.height).translate(-b.x,-b.y);
+  const base=new Path2D(L.d),out=new Path2D();out.addPath(base,m);
+  const cx=b.x+b.width/2,cy=b.y+b.height/2;
+  const mi=m.multiply(new DOMMatrix().translate(cx,cy).scale(.92).translate(-cx,-cy)),inner=new Path2D();inner.addPath(base,mi);
+  ctx.fillStyle="#fff";ctx.fill(out);
+  ctx.strokeStyle="#000";ctx.setLineDash([]);ctx.lineWidth=.6;ctx.stroke(out);
+  ctx.setLineDash([3,2]);ctx.lineWidth=.3;ctx.stroke(inner);ctx.setLineDash([]);
+  const T=(x,y)=>m.transformPoint(new DOMPoint(x,y));
+  if(L.fold){const a=T(30,L.fold[0]),c=T(30,L.fold[1]);ctx.strokeStyle="#c0392b";ctx.lineWidth=.8;ctx.setLineDash([8,2,1,2]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(c.x,c.y);ctx.stroke();ctx.setLineDash([])}
+  const g=L.grain||[100,95,100,195],g1=T(g[0],g[1]),g2=T(g[2],g[3]),ang=Math.atan2(g2.y-g1.y,g2.x-g1.x);
+  ctx.strokeStyle="#1d6a55";ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(g1.x,g1.y);ctx.lineTo(g2.x,g2.y);
+  [[g2,ang],[g1,ang+Math.PI]].forEach(([q,a])=>{ctx.moveTo(q.x,q.y);ctx.lineTo(q.x-5*Math.cos(a-.4),q.y-5*Math.sin(a-.4));ctx.moveTo(q.x,q.y);ctx.lineTo(q.x-5*Math.cos(a+.4),q.y-5*Math.sin(a+.4))});ctx.stroke();
+  /* label in het midden van het deel */
+  const c=T(cx,cy),fs=Math.max(4,Math.min(9,pc.w/14));
+  ctx.fillStyle="#000";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.font=`600 ${fs}px "Golos Text", Arial, sans-serif`;ctx.fillText(pc.naam.toUpperCase(),c.x+fs*1.2,c.y-fs*1.4);
+  ctx.font=`${fs*.7}px "Golos Text", Arial, sans-serif`;
+  ctx.fillText(`Knip ${pc.aantal}x${L.fold&&pc.aantal===1?" op de stofvouw":""}`,c.x+fs*1.2,c.y);
+  ctx.fillText(`${fmt(pc.wcm)} x ${fmt(pc.hcm)} cm`,c.x+fs*1.2,c.y+fs*1.1);
+  ctx.font=`${fs*.55}px "Golos Text", Arial, sans-serif`;ctx.fillStyle="#555";ctx.fillText(title,c.x+fs*1.2,c.y+fs*2.1);
+}
+function svgToCanvas(svg,wPx,hPx){
+  return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=wPx;c.height=hPx;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,wPx,hPx);x.drawImage(img,0,0,wPx,hPx);res(c)};img.onerror=rej;
+    img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" '))});
+}
+function chartCanvas(ch,cell){
+  const c=document.createElement("canvas");c.width=ch.w*cell+2;c.height=ch.h*cell+2;const x=c.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.translate(1,1);x.textAlign="center";x.textBaseline="middle";x.font=`${cell*.7}px Arial`;
+  ch.cells.forEach((row,y)=>row.forEach((v,i)=>{if(v===undefined)return;x.fillStyle=v?THREAD[v].hex:"#f4f4f4";x.fillRect(i*cell,y*cell,cell,cell);
+    if(v){x.fillStyle=["Y","W"].includes(v)?"#000":"#fff";x.fillText(THREAD[v].sym,i*cell+cell/2,y*cell+cell/2+1)}}));
+  for(let i=0;i<=ch.w;i++){x.strokeStyle=i%10===0?"#000":"#999";x.lineWidth=i%10===0?2:1;x.beginPath();x.moveTo(i*cell,0);x.lineTo(i*cell,ch.h*cell);x.stroke()}
+  for(let y=0;y<=ch.h;y++){x.strokeStyle=y%10===0?"#000":"#999";x.lineWidth=y%10===0?2:1;x.beginPath();x.moveTo(0,y*cell);x.lineTo(ch.w*cell,y*cell);x.stroke()}
+  return c;
+}
+async function addEmbPages(pdf,it){
+  const e=EMB[it.id];if(!e)return;
+  const ch=e.type==="haak"?haak(M).chart:e.chart,mode=e.type==="haak"?"run":"sym";
+  pdf.addPage();pdf.setFont("helvetica","bold");pdf.setFontSize(18);pdf.text(e.titel+": telpatroon",15,20);
+  pdf.setFont("helvetica","normal");pdf.setFontSize(9.5);
+  const intro=e.type==="haak"?"Elk vakje is een vaste. Het cijfer telt hoeveel steken je na elkaar in die kleur haakt. Lees van boven naar onder; herhaal het patroon rond.":"Elk vakje is een kruisje. Dikke lijnen staan om de 10 vakjes, zodat je makkelijk telt. Begin in het midden van je stof.";
+  pdf.text(intro,15,27,{maxWidth:180});
+  const svg=chartGridSVG(ch,22,mode),vb=svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/),ar=(+vb[2])/(+vb[1]);
+  let w=180,h=w*ar;if(h>200){h=200;w=h/ar}
+  const cv=await svgToCanvas(svg,Math.round(w*8),Math.round(h*8));
+  pdf.addImage(cv.toDataURL("image/png"),"PNG",15,36,w,h);
+  let y=36+h+8;const n=chartCounts(ch);
+  pdf.setFont("helvetica","bold");pdf.setFontSize(10.5);pdf.text("Kleuren",15,y);pdf.setFont("helvetica","normal");pdf.setFontSize(9);
+  Object.keys(ch.pal).filter(k=>n[k]).forEach((k,i)=>{const t=ch.pal[k],col=i%3,row=Math.floor(i/3),x=15+col*62,yy=y+4+row*7;
+    pdf.setFillColor(t.hex);pdf.rect(x,yy,5,5,"F");pdf.setDrawColor(0);pdf.rect(x,yy,5,5);pdf.text(`${t.naam} (${t.sym}): ${n[k]}`,x+7,yy+4)});
+  if(e.type==="haak"){
+    const hh=haak(M);pdf.addPage();pdf.setFont("helvetica","bold");pdf.setFontSize(18);pdf.text("Zo haak je het",15,20);
+    pdf.setFont("helvetica","normal");pdf.setFontSize(10);
+    pdf.text(`Voor een hoofdomtrek van ${fmt(M.hoofd)} cm. Wol: ${hh.wol.map(w=>w.naam.toLowerCase()+" ± "+w.gram+" g").join(", ")}. Haaknaald 4 mm.`,15,28,{maxWidth:180});
+    let yy=42;hh.steps.forEach((t,i)=>{const lines=pdf.splitTextToSize(`${i+1}. ${t}`,180);pdf.text(lines,15,yy);yy+=lines.length*5+3});
+  }
+}
+async function buildPatternPDF(it){
+  const p=patternOf(it.id),jsPDF=await loadJsPDF();
+  if(!p.delen.length){const pdf=new jsPDF({unit:"mm",format:"a4"});await addEmbPages(pdf,it);pdf.deletePage(1);return{blob:pdf.output("blob"),filename:`patroon-${slugify(it.title)}.pdf`,pages:0,extra:pdf.getNumberOfPages()}}
+  const lay=layoutPieces(p);
+  const pdf=new jsPDF({unit:"mm",format:"a4"}),letters="ABCDEFGHIJKLMNOP";
+  /* voorblad */
+  pdf.setFont("helvetica","bold");pdf.setFontSize(22);pdf.text("Make it seamlessly",15,22);
+  pdf.setFontSize(15);pdf.text(it.title,15,32);
+  pdf.setFont("helvetica","normal");pdf.setFontSize(10);
+  pdf.text(`Patroon op jouw maten: ${needed(it).map(k=>`${MEASURES[k].label.toLowerCase()} ${fmt(M[k])} cm`).join(", ")}.`,15,40,{maxWidth:180});
+  pdf.setFont("helvetica","bold");pdf.setFontSize(11);pdf.text("1. Print op ware grootte",15,54);
+  pdf.setFont("helvetica","normal");pdf.setFontSize(10);
+  pdf.text("Kies bij het printen '100 %' of 'Werkelijke grootte', niet 'Aanpassen aan pagina'. Meet daarna het vierkant hieronder: het moet precies 5 x 5 cm zijn.",15,60,{maxWidth:180});
+  pdf.setLineWidth(.4);pdf.rect(15,72,50,50);pdf.setFontSize(9);pdf.text("5 x 5 cm",40,98,{align:"center"});
+  pdf.setFont("helvetica","bold");pdf.setFontSize(11);pdf.text("2. Plak de bladen aan elkaar",80,78);
+  pdf.setFont("helvetica","normal");pdf.setFontSize(10);
+  pdf.text(`Je patroon staat op ${lay.cols*lay.rows} bladen: ${lay.cols} naast elkaar en ${lay.rows} onder elkaar. Elk blad heeft een code (A1, A2...): de letter is de rij, het cijfer de kolom. Leg ze zo naast elkaar:`,80,84,{maxWidth:115});
+  const s=Math.min(6,90/lay.cols);
+  for(let r=0;r<lay.rows;r++)for(let c=0;c<lay.cols;c++){pdf.rect(80+c*s*1.1,104+r*s*1.45,s*1.1,s*1.45);pdf.setFontSize(Math.max(5,s*1.2));pdf.text(letters[r]+(c+1),80+c*s*1.1+s*.55,104+r*s*1.45+s*.85,{align:"center"})}
+  let y=Math.max(132,104+lay.rows*s*1.45+10);
+  pdf.setFont("helvetica","bold");pdf.setFontSize(11);pdf.text("3. Lijnen op het patroon",15,y);
+  pdf.setFont("helvetica","normal");pdf.setFontSize(10);
+  ["Volle zwarte lijn: snijlijn, hier knip je.","Stippellijn: stiklijn (ongeveer 1 cm naadwaarde).","Groene pijl: draadrichting, leg die evenwijdig aan de zelfkant van de stof.","Rode streep-stippellijn: stofvouw, leg dit deel tegen de vouw van de stof."].forEach((t,i)=>pdf.text("- "+t,15,y+7+i*6));
+  y+=36;pdf.setFont("helvetica","bold");pdf.setFontSize(11);pdf.text("4. Patroondelen",15,y);
+  pdf.setFont("helvetica","normal");pdf.setFontSize(10);
+  lay.pieces.forEach((pc,i)=>pdf.text(`- ${pc.naam}: knip ${pc.aantal}x, ${fmt(pc.wcm)} x ${fmt(pc.hcm)} cm`,15,y+7+i*6));
+  y+=10+lay.pieces.length*6;
+  pdf.setFontSize(9);pdf.setTextColor(90);
+  pdf.text(`Vereenvoudigd patroon op basis van stuk ${it.id} uit de MoMu-studiecollectie. Maak eerst een proefmodel in goedkope stof.`,15,Math.min(285,y+4),{maxWidth:180});
+  pdf.setTextColor(0);
+  /* de bladen zelf */
+  const PX=5,cv=document.createElement("canvas");cv.width=190*PX;cv.height=277*PX;const ctx=cv.getContext("2d");
+  for(let r=0;r<lay.rows;r++)for(let c=0;c<lay.cols;c++){
+    ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.setTransform(PX,0,0,PX,-c*190*PX,-r*277*PX);
+    lay.pieces.forEach(pc=>drawPiece(ctx,pc,it.title));
+    ctx.setTransform(PX,0,0,PX,0,0);
+    ctx.strokeStyle="#999";ctx.lineWidth=.25;ctx.setLineDash([2,2]);ctx.strokeRect(.2,.2,189.6,276.6);ctx.setLineDash([]);
+    ctx.fillStyle="#000";ctx.font=`600 6px "Golos Text", Arial, sans-serif`;ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText(letters[r]+(c+1),3,3);
+    ctx.font=`3px "Golos Text", Arial, sans-serif`;ctx.fillStyle="#777";ctx.fillText(it.title,3,10);
+    pdf.addPage();pdf.addImage(cv.toDataURL("image/png"),"PNG",10,10,190,277,undefined,"FAST");
+  }
+  await addEmbPages(pdf,it);
+  return{blob:pdf.output("blob"),filename:`patroon-${slugify(it.title)}.pdf`,pages:lay.cols*lay.rows,extra:EMB[it.id]?1:0};
+}
+async function downloadPattern(it,btn,msgEl){
+  const label=btn.innerHTML;btn.disabled=true;btn.innerHTML=`<span class="spin"></span> Patroon wordt gemaakt…`;if(msgEl)msgEl.textContent="";
+  try{
+    const r=await buildPatternPDF(it);
+    if(IN_CLAUDE){
+      const dl=await downloadsPromise;
+      if(!dl)throw{text:"Downloaden kan niet in deze weergave."};
+      try{await dl.save({filename:r.filename,data:r.blob})}catch(e){if(e&&e.code==="declined")return;throw{text:"Downloaden lukte niet. Probeer het opnieuw."}}
+    }else{
+      const a=document.createElement("a");a.href=URL.createObjectURL(r.blob);a.download=r.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+    }
+    if(msgEl)msgEl.textContent=r.pages?`Je patroon staat op ${r.pages+1+r.extra} bladen: 1 uitlegblad, ${r.pages} patroonbladen${r.extra?` en ${r.extra} blad met het ${EMB[it.id].titel.toLowerCase()}`:""}. Print op 100 %.`:`Je ${EMB[it.id].titel.toLowerCase()} is gedownload.`;
+  }catch(e){if(msgEl)msgEl.textContent=(e&&e.text)||"Het patroon kon niet gemaakt worden. Controleer je internetverbinding en probeer opnieuw."}
+  finally{btn.disabled=false;btn.innerHTML=label}
+}
+
+/* ================= 6. How-to ================= */
+function renderHowto(it){
+  const p=patternOf(it.id),keys=needed(it),done=store.get("stappen-"+it.id,[]);
+  const meters=fabricMeters(p.delen,M);
+  document.getElementById("makenBody").innerHTML=`
+    <button class="back" data-go="meten-${it.id}">&larr; Terug naar je maten en patronen</button>
+    <div class="howtop">
+      <div class="intro">
+        <div class="thumb"><img src="${it.img}" alt="${esc(it.title)}"></div>
+        <div>
+          <h1>${esc(it.title)}</h1>
+          <div class="level">Niveau: ${LEVELS[p.niveau]}</div>
+        </div>
+      </div>
+      <div class="mats onpaper">
+        <h2>Materiaallijst</h2>
+        ${p.delen.length?`<div class="fabric"><span class="fl">Stof die je nodig hebt</span><b>${fmt(meters)} meter</b>bij een stofbreedte van 140 cm, berekend voor jouw maten en ${p.delen.reduce((a,d)=>a+d[2],0)} patroondelen</div>`:""}
+        ${EMB[it.id]&&EMB[it.id].type==="haak"?(h=>`<div class="fabric"><span class="fl">Wol die je nodig hebt</span><b>± ${h.gram} gram</b>${h.wol.map(w=>`${w.naam}: ± ${w.gram} g`).join(" · ")}</div>`)(haak(M)):""}
+        <ul>${p.materiaal.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>
+      </div>
+    </div>
+    ${embHowto(it)}
+    <div class="plan">
+      <div class="plan-head"><h2>Stappenplan</h2></div>
+      <ol class="steps" id="steps">${p.stappen.map((s,i)=>`<li class="step ${done.includes(i)?"done":""}" data-i="${i}"><span class="n">${i+1}</span><p>${esc(s)}</p><button class="check" aria-pressed="${done.includes(i)}" aria-label="Stap ${i+1} klaar"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></button></li>`).join("")}</ol>
+      ${p.auto?`<p class="auto">Uitleg en stappen automatisch opgesteld door AI. Kijk ze na met je docent.</p>`:""}
+    </div>
+    <p class="finish">Je patroon is een vereenvoudigde versie op jouw maten. Maak eerst een proefmodel in goedkope stof voor je in je mooie stof knipt.</p>`;
+  updateProgress(it);
+  document.getElementById("steps").addEventListener("click",e=>{
+    const li=e.target.closest(".step");if(!li||!e.target.closest(".check"))return;
+    const i=+li.dataset.i,d=store.get("stappen-"+it.id,[]),on=!d.includes(i),nd=on?[...d,i]:d.filter(x=>x!==i);
+    store.set("stappen-"+it.id,nd);li.classList.toggle("done",on);li.querySelector(".check").setAttribute("aria-pressed",on);updateProgress(it);
+  });
+}
+function embHowto(it){
+  const e=EMB[it.id];if(!e)return"";
+  if(e.type==="kruissteek")return `<div class="embbox"><div class="embhead"><h2>${e.titel}</h2><div class="views" role="group" aria-label="Weergave"><button class="view on" data-view="kruis" data-emb="${it.id}" aria-pressed="true">Kruisjes</button><button class="view" data-view="tel" data-emb="${it.id}" aria-pressed="false">Telpatroon</button></div></div>
+    <div class="emb-grid"><div class="chartbox big" id="embChart">${chartStitchSVG(e.chart,16)}</div><div><p>${esc(e.uitleg)}</p><ul class="threads">${chartLegend(e.chart)}</ul><p class="small">Stof: ${esc(e.chart.bgname)}. Een kruisje is ongeveer 2,5 mm: het motief wordt zo'n ${fmt(Math.round(e.chart.w*.25))} × ${fmt(Math.round(e.chart.h*.25))} cm.</p></div></div></div>`;
+  if(e.type==="haak"){const h=haak(M);return `<div class="embbox"><div class="embhead"><h2>${e.titel}</h2></div>
+    <div class="emb-grid haakgrid"><div class="chartbox big light" id="embChart">${chartGridSVG(h.chart,20,"run")}</div><div><div class="hat">${haakSVG(h)}</div><p>${esc(e.uitleg)} Voor jouw hoofdomtrek van ${fmt(M.hoofd)} cm meerder je tot <b>${h.S} steken</b> en haak je daarna <b>${h.R} toeren</b> volgens het telpatroon.</p><p class="small">Het cijfer in een vakje telt hoeveel steken je na elkaar in die kleur haakt. Proeflapje: 16 vasten × 18 toeren = 10 × 10 cm, haaknaald 4 mm.</p><ul class="threads">${Object.keys(HAAK_PAL).map(k=>`<li><i style="background:${HAAK_PAL[k][1]}"></i>${HAAK_PAL[k][0]}</li>`).join("")}</ul></div></div></div>`}
+  return"";
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-view]");if(!b)return;const em=EMB[b.dataset.emb];if(!em)return;
+  document.getElementById("embChart").innerHTML=b.dataset.view==="tel"?chartGridSVG(em.chart,16,"sym"):chartStitchSVG(em.chart,16);
+  document.getElementById("embChart").classList.toggle("light",b.dataset.view==="tel");
+  b.parentElement.querySelectorAll(".view").forEach(v=>{const on=v===b;v.classList.toggle("on",on);v.setAttribute("aria-pressed",on)});
+});
+function updateProgress(it){
+  const p=patternOf(it.id),n=store.get("stappen-"+it.id,[]).length,t=p.stappen.length;
+  const pr=document.getElementById("prog");if(pr)pr.textContent=`${n} van ${t} stappen klaar`;
+}
+
+/* ================= Élodie ================= */
+let lastFind=(()=>{try{return JSON.parse(sessionStorage.getItem("mis-vondst"))||null}catch(e){return null}})();
+if(lastFind&&!(Array.isArray(lastFind.ids)&&lastFind.ids.every(id=>BY_ID[id])))lastFind=null;
+const EL_LINES={
+  z1:"Bonjour chérie! Ik ben Élodie, de persoonlijke naaister van MoMu.",
+  z2:"Ik heb gezien dat je geïnteresseerd bent in onze collectie.",
+  z3:"Zeg me maar wat je zoekt, en we gaan samen kijken.",
+  z4:"Et voilà, chérie! Ik denk dat ik gevonden heb wat je zocht."
+};
+const elFig=document.getElementById("elFig"),elSay=document.getElementById("elSay");
+const elMute=document.getElementById("elMute");
+let elSound=store.get("geluid",true),elRun=0,elBusy=false,aiOff=false;
+const elAudio=new Audio();
+const ICON_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const ICON_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+function elMuteUI(){elMute.innerHTML=(elSound?ICON_ON:ICON_OFF);elMute.setAttribute("aria-pressed",elSound);elMute.setAttribute("aria-label",elSound?"Geluid uitzetten":"Geluid aanzetten")}
+elMuteUI();
+elMute.addEventListener("click",()=>{elSound=!elSound;store.set("geluid",elSound);elMuteUI();if(!elSound)elAudio.pause()});
+function elMood(m){elFig.querySelectorAll("img").forEach(i=>i.classList.toggle("on",i.dataset.m===m))}
+function elType(text,id,ms){
+  elSay.textContent="";let i=0;
+  return new Promise(res=>{(function step(){if(id!==elRun)return res();elSay.textContent=text.slice(0,++i);
+    if(i<text.length)setTimeout(step,ms*(/[,.!?…]/.test(text[i-1])?5:1));else res()})()});
+}
+const EL_ENV={"z1":[0.0,0.32,0.42,0.33,0.41,0.9,0.68,0.81,0.69,0.34,0.15,0.49,0.8,0.63,0.13,0.1,0.17,0.15,0.15,0.19,0.8,0.64,0.39,0.38,0.53,0.43,0.3,0.21,0.04,0.01,0.0,0.0,0.0,0.0,0.0,0.17,0.71,0.89,0.36,0.06,0.05,0.32,0.32,0.41,1.0,0.75,0.63,0.57,0.76,0.69,0.78,0.65,0.55,0.95,0.86,0.6,0.29,0.17,0.28,0.51,0.53,0.33,0.04,0.01,0.0,0.0,0.05,0.11,0.81,0.73,0.24,0.03,0.52,0.82,0.61,0.16,0.09,0.05,0.02,0.04,0.62,0.71,0.65,0.72,0.64,0.62,0.19,0.04,0.43,0.62,0.51,0.53,0.68,0.74,0.52,0.43,0.21,0.04,0.02,0.05,0.71,0.4,0.4,0.34,0.27,0.87,0.72,0.48,0.41,0.53,0.53,0.53,0.64,0.49,0.41,0.38,0.35,0.32,0.19,0.06,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"z2":[0.29,0.75,0.88,0.69,0.19,0.03,0.05,0.57,0.86,0.82,0.64,0.1,0.06,0.36,0.21,0.78,0.89,0.74,0.45,0.32,0.25,0.52,0.77,0.8,0.75,0.79,0.72,0.56,0.44,0.35,0.07,0.02,0.0,0.0,0.0,0.0,0.02,0.17,0.2,0.86,1.0,0.73,0.45,0.06,0.04,0.07,0.29,0.86,0.78,0.63,0.31,0.57,0.73,0.68,0.73,0.73,0.14,0.07,0.75,0.62,0.45,0.72,0.62,0.26,0.04,0.03,0.06,0.53,0.71,0.27,0.07,0.02,0.05,0.53,0.42,0.25,0.78,0.84,0.58,0.58,0.56,0.25,0.03,0.01,0.01,0.36,0.78,0.74,0.72,0.61,0.55,0.75,0.67,0.56,0.65,0.4,0.33,0.7,0.41,0.06,0.1,0.79,0.75,0.5,0.58,0.42,0.1,0.03,0.06,0.03,0.03,0.04,0.11,0.22,0.12,0.02,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"z3":[0.0,0.31,0.42,0.39,0.28,0.37,1.0,0.73,0.66,0.61,0.31,0.44,0.83,0.89,0.76,0.7,0.78,0.85,0.82,0.91,0.72,0.55,0.27,0.38,0.44,0.41,0.89,0.74,0.36,0.05,0.04,0.1,0.22,0.75,0.7,0.45,0.31,0.17,0.19,0.57,0.62,0.33,0.08,0.02,0.02,0.01,0.0,0.04,0.39,0.3,0.04,0.01,0.0,0.0,0.0,0.0,0.16,0.66,0.81,0.86,0.83,0.68,0.87,0.77,0.52,0.15,0.34,0.75,0.74,0.58,0.61,0.7,0.17,0.03,0.03,0.06,0.72,0.69,0.58,0.61,0.6,0.51,0.55,0.51,0.2,0.03,0.12,0.8,0.58,0.52,0.32,0.11,0.02,0.03,0.39,0.49,0.42,0.23,0.27,0.24,0.23,0.14,0.03,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"z4":[0.0,0.66,1.0,0.87,0.86,0.44,0.38,0.7,0.96,0.81,0.7,0.83,0.85,0.67,0.54,0.16,0.14,0.16,0.16,0.3,0.85,0.75,0.5,0.39,0.61,0.5,0.49,0.42,0.12,0.03,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.19,0.94,0.9,0.17,0.09,0.31,0.36,0.34,0.98,0.79,0.76,0.82,0.58,0.42,0.39,0.26,0.94,0.82,0.45,0.06,0.02,0.01,0.12,0.8,0.58,0.16,0.05,0.08,0.17,0.23,0.82,0.69,0.43,0.39,0.84,0.82,0.64,0.76,0.81,0.58,0.84,0.59,0.58,0.3,0.2,0.63,0.72,0.33,0.04,0.05,0.28,0.83,0.89,0.55,0.19,0.04,0.05,0.08,0.67,0.74,0.52,0.36,0.2,0.51,0.77,0.66,0.56,0.36,0.09,0.05,0.04,0.01,0.0,0.02,0.19,0.12,0.04,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"z5":[0.0,0.43,0.62,0.78,0.86,0.9,0.69,0.51,0.33,0.06,0.05,0.07,0.71,0.91,0.82,0.58,0.39,0.64,0.77,0.73,0.78,0.64,0.52,0.29,0.03,0.01,0.04,0.15,0.3,0.12,0.02,0.0,0.0,0.0,0.0,0.0,0.04,0.8,1.0,0.69,0.85,0.97,0.91,0.86,0.89,0.79,0.55,0.82,0.88,0.58,0.28,0.19,0.73,0.85,0.3,0.07,0.05,0.07,0.0,0.08,0.45,0.78,0.8,0.66,0.38,0.51,0.75,0.79,0.67,0.18,0.05,0.02,0.01,0.29,0.95,0.76,0.57,0.27,0.04,0.03,0.01,0.65,0.79,0.51,0.17,0.04,0.07,0.04,0.03,0.52,0.82,0.62,0.57,0.7,0.6,0.54,0.65,0.66,0.64,0.66,0.75,0.75,0.56,0.52,0.24,0.03,0.01,0.06,0.71,0.69,0.47,0.61,0.61,0.44,0.17,0.03,0.01,0.0,0.0,0.0,0.57,0.96,0.81,0.45,0.07,0.04,0.05,0.38,0.74,0.76,0.91,0.75,0.45,0.11,0.05,0.24,0.28,0.37,0.69,0.74,0.46,0.27,0.52,0.45,0.37,0.58,0.56,0.5,0.33,0.21,0.15,0.04,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"z6":[0.0,0.0,0.0,0.0,0.0,0.11,0.31,0.34,0.26,0.52,0.89,0.81,0.55,0.62,0.74,0.78,0.85,0.79,0.68,0.57,0.22,0.3,0.44,0.38,0.31,0.3,0.58,0.78,0.76,0.72,0.62,0.24,0.46,0.29,0.23,0.65,0.38,0.06,0.06,0.6,0.66,0.58,0.54,0.57,0.64,0.52,0.23,0.54,0.65,0.47,0.24,0.03,0.03,0.02,0.01,0.04,0.62,0.57,0.43,0.43,0.43,0.31,0.35,0.35,0.33,0.26,0.14,0.02,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.65,0.73,0.81,0.83,0.84,0.95,0.4,0.18,0.52,0.84,0.63,0.81,0.73,0.67,0.61,0.74,0.8,0.87,0.83,0.74,0.72,0.69,0.54,0.13,0.05,0.02,0.04,0.03,0.12,0.79,0.67,0.47,0.5,0.56,0.49,0.15,0.05,0.03,0.02,0.04,0.01,0.25,0.82,0.62,0.57,0.63,0.7,0.61,0.09,0.04,0.05,0.16,0.3,0.72,0.64,0.55,0.49,0.58,0.67,0.73,0.65,0.46,0.09,0.03,0.04,0.54,0.6,0.54,0.35,0.13,0.36,0.63,0.69,0.8,0.78,0.72,0.72,0.76,0.66,0.57,0.39,0.07,0.02,0.01,0.06,0.35,0.28,0.67,0.51,0.17,0.03,0.61,0.74,0.52,0.14,0.04,0.08,0.1,0.18,0.67,0.56,0.59,0.57,0.49,0.58,0.6,0.34,0.2,0.42,0.48,0.36,0.55,0.54,0.53,0.54,0.56,0.58,0.69,0.58,0.3,0.81,0.54,0.34,0.3,0.4,0.47,0.48,0.51,0.48,0.13,0.02,0.01,0.02,0.0,0.03,0.28,0.23,0.03,0.0,0.0,0.0,0.0,0.51,0.86,0.68,0.26,0.04,0.04,0.21,0.46,1.0,0.68,0.66,0.66,0.45,0.6,0.59,0.65,0.71,0.55,0.48,0.38,0.15,0.03,0.01,0.0,0.02,0.07,0.1,0.03,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.01,0.02,0.02,0.06,0.81,0.74,0.65,0.75,0.91,0.8,0.79,0.81,0.87,0.84,0.78,0.73,0.55,0.22,0.04,0.01,0.02,0.39,0.69,0.63,0.59,0.63,0.16,0.04,0.02,0.01,0.53,0.71,0.17,0.03,0.56,0.79,0.58,0.72,0.58,0.11,0.06,0.35,0.74,0.64,0.52,0.45,0.47,0.46,0.52,0.61,0.49,0.28,0.16,0.03,0.01,0.0,0.0,0.0,0.09,0.31,0.27,0.63,0.92,0.75,0.5,0.29,0.87,0.82,0.68,0.5,0.13,0.02,0.05,0.06,0.38,0.64,0.49,0.55,0.6,0.54,0.09,0.02,0.05,0.56,0.67,0.63,0.44,0.46,0.47,0.19,0.04,0.04,0.43,0.6,0.55,0.44,0.4,0.13,0.05,0.23,0.19,0.53,0.61,0.45,0.15,0.34,0.39,0.38,0.34,0.34,0.45,0.37,0.32,0.28,0.26,0.2,0.15,0.09,0.02,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]};
+let elRaf=0;
+function elBob(img,file,id){
+  const E=EL_ENV[file]||[];cancelAnimationFrame(elRaf);
+  const loop=()=>{if(id!==elRun||elAudio.ended){img.style.transform="";return}
+    const lvl=Math.min(1,(E[Math.floor(elAudio.currentTime*30)]||0)*1.3);
+    img.style.transform=`translateY(${(-lvl*12).toFixed(1)}px) scale(${(1+lvl*.02).toFixed(3)},${(1-lvl*.01).toFixed(3)})`;
+    elRaf=requestAnimationFrame(loop)};
+  loop();
+}
+function elStopBob(){cancelAnimationFrame(elRaf);document.querySelectorAll("#elFig img,#pkImg").forEach(i=>i.style.transform="")}
+async function elSpeak(text,mood,file){
+  if(typeof setPresence==="function")setPresence({elodie:String(text).slice(0,300)});
+  const id=++elRun;elAudio.pause();elStopBob();elMood(mood);
+  const withVoice=!!(file&&elSound);elFig.classList.toggle("talk",!withVoice);
+  let ms=28,played=Promise.resolve();
+  if(file&&elSound){
+    elAudio.src=`stem/${file}_sterk.mp3`;
+    played=new Promise(r=>{elAudio.onended=elAudio.onerror=r;elAudio.play().catch(r)});
+    await new Promise(r=>{if(elAudio.readyState>=1)r();else{elAudio.onloadedmetadata=r;setTimeout(r,800)}});
+    if(elAudio.duration&&isFinite(elAudio.duration))ms=Math.max(18,elAudio.duration*900/text.length);
+    elBob(elFig.querySelector("img.on"),file,id);
+  }
+  await Promise.all([elType(text,id,ms),played]);
+  if(id===elRun){elFig.classList.remove("talk");elStopBob();elSay.textContent=text}
+}
+
+/* Élodie kijkt even om de hoek bij het stuk (z5) en bij het opmeten (z6), als het gesprek met haar begonnen is */
+EL_LINES.z5="Als je wilt, kunnen we dit kledingstuk ook samen maken, op maat voor jou.";
+EL_LINES.z6="Ga maar voor de camera staan. Onze MoMu-maatscanner scant jouw maten en maakt de patronen die je nodig hebt, op jouw maat. Samen met een stappenplan, zodat je meteen kunt beginnen.";
+const pk={box:document.getElementById("elPeek"),img:document.getElementById("pkImg"),text:document.getElementById("pkText"),line:null,mood:null};
+let elStarted=(()=>{try{return sessionStorage.getItem("mis-gesprek")==="1"}catch(e){return false}})();
+const pkSeen=new Set();
+async function peek(file,mood){
+  pk.line=file;pk.mood=mood;pk.img.src=`img/${mood}.png`;pk.box.hidden=false;
+  const p=pk.box.querySelector(".pk-fig");p.style.animation="none";void p.offsetWidth;p.style.animation="";
+  const id=++elRun,text=EL_LINES[file];elAudio.pause();elStopBob();pk.text.textContent=text;
+  const say=document.getElementById("pkSay");say.hidden=false;clearTimeout(pk.t);
+  const fold=ms=>{pk.t=setTimeout(()=>{if(id===elRun)say.hidden=true},ms)};
+  if(!elSound){fold(9000);return}
+  elAudio.src=`stem/${file}_sterk.mp3`;
+  try{await elAudio.play();elBob(pk.img,file,id);await new Promise(r=>{elAudio.onended=elAudio.onerror=r})}catch(e){}
+  if(id===elRun){elStopBob();fold(4000)}
+}
+function hidePeek(){pk.box.hidden=true;++elRun;elAudio.pause();elStopBob()}
+document.getElementById("pkX").addEventListener("click",hidePeek);
+document.getElementById("pkFig").addEventListener("click",()=>{if(pk.line)peek(pk.line,pk.mood)});
+function peekFor(h){
+  const m=h.match(/^(stuk|meten)-(\d\d)$/);
+  if(!m||!elStarted){if(!pk.box.hidden)hidePeek();return}
+  const key=h;if(pkSeen.has(key)){pk.box.hidden=true;return}
+  pkSeen.add(key);setTimeout(()=>{if(location.hash.slice(1)===h)peek(m[1]==="stuk"?"z5":"z6",m[1]==="stuk"?"praten":"hey")},m[1]==="stuk"?1400:600);
+}
+addEventListener("hashchange",()=>peekFor(location.hash.slice(1)));
+/* ---------- wie ben ik: de telefoon (na het scannen) of het grote scherm ---------- */
+const ROLE=/^#elodie/.test(location.hash)?"telefoon":"scherm";
+const PAIR=(location.hash.match(/^#elodie-([a-z0-9]{4,8})$/)||[])[1]||null;
+const capP=n=>(window.claude&&window.claude.use)?window.claude.use(n):Promise.resolve(null);
+const roomP=IN_CLAUDE?capP("room"):peerRoom(),dictP=IN_CLAUDE?capP("dictation"):webSpeech();
+let pair=null,deskHere=false,deskScherm="",phoneSaid=new Set();
+
+/* ---------- losse site (GitHub Pages): koppeling via PeerJS, spraak via de browser ---------- */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+async function peerRoom(){
+  await null;
+  try{if(typeof Peer!=="function")await loadScript("lib/peerjs.min.js")}catch(e){return null}
+  if(typeof Peer!=="function")return null;
+  const self={},others=new Map(),handlers=[],conns=new Set();
+  const snap=()=>[{sameTab:true,isMe:true,presence:{...self},updatedAt:Date.now()},...others.values()];
+  const fire=()=>{const ps=snap();handlers.forEach(h=>{try{h({peers:ps,joined:[],left:[],updated:[]})}catch(e){}})};
+  const send=()=>conns.forEach(c=>{if(c.open)try{c.send({t:"p",p:{...self}})}catch(e){}});
+  const ID=c=>"momu-elodie-"+c;
+  const peer=new Peer(ROLE==="scherm"?ID(DESK_CODE):undefined,{debug:0});
+  let dialTimer=0;
+  function hook(c){
+    conns.add(c);
+    c.on("open",()=>{try{c.send({t:"p",p:{...self}})}catch(e){}});
+    c.on("data",d=>{if(d&&d.t==="p"&&d.p&&typeof d.p==="object"){others.set(c.peer,{sameTab:false,isMe:false,presence:d.p,updatedAt:Date.now()});fire()}});
+    const gone=()=>{if(!conns.has(c))return;conns.delete(c);others.delete(c.peer);fire();if(ROLE==="telefoon")redial()};
+    c.on("close",gone);c.on("error",gone);
+  }
+  function dial(){if(!PAIR||peer.destroyed||[...conns].some(c=>c.open))return;hook(peer.connect(ID(PAIR),{reliable:true}))}
+  function redial(){clearTimeout(dialTimer);dialTimer=setTimeout(dial,2000)}
+  if(ROLE==="scherm")peer.on("connection",hook);
+  peer.on("disconnected",()=>{try{peer.reconnect()}catch(e){}});
+  const ok=await new Promise(res=>{
+    const t=setTimeout(()=>res(false),15000);
+    peer.on("open",()=>{clearTimeout(t);res(true)});
+    peer.on("error",e=>{if(e&&e.type==="peer-unavailable"){redial();return}if(e&&e.type==="unavailable-id"){clearTimeout(t);res(false)}});
+  });
+  if(!ok)return null;
+  if(ROLE==="telefoon")dial();
+  return {
+    presence:async patch=>{for(const k in patch){if(patch[k]===null)delete self[k];else self[k]=patch[k]}fire();send()},
+    onPeers:(h,onErr)=>{handlers.push(h);setTimeout(()=>h({peers:snap(),joined:[],left:[],updated:[]}),0);return()=>{}}
+  };
+}
+async function webSpeech(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;
+  let rec=null,active=false;const st=[],pa=[],fi=[];
+  const emit=(arr,v)=>arr.forEach(h=>{try{h(v)}catch(e){}});
+  return {
+    start(){
+      if(active)return Promise.resolve();
+      rec=new SR();rec.lang="nl-BE";rec.interimResults=true;rec.continuous=true;
+      let reason=null;
+      rec.onstart=()=>emit(st,{state:"listening"});
+      rec.onresult=e=>{let interim="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)emit(fi,{text:" "+r[0].transcript.trim()});else interim+=r[0].transcript}emit(pa,{text:interim.trim()})};
+      rec.onerror=e=>{reason=(e.error==="not-allowed"||e.error==="service-not-allowed")?"not_granted":e.error==="no-speech"?"stopped":"upstream_error"};
+      rec.onend=()=>{active=false;emit(pa,{text:""});emit(st,{state:"idle",reason:reason||"stopped"})};
+      active=true;emit(st,{state:"starting"});
+      try{rec.start()}catch(e){active=false;emit(st,{state:"idle",reason:"upstream_error"});return Promise.reject({code:"upstream_error"})}
+      return Promise.resolve();
+    },
+    stop(){if(rec&&active)try{rec.stop()}catch(e){}return Promise.resolve()},
+    active:()=>active,
+    onPartial:h=>{pa.push(h);return()=>{}},onFinal:h=>{fi.push(h);return()=>{}},onState:h=>{st.push(h);return()=>{}}
+  };
+}
+
+/* ---------- telefoon: praten met je stem ---------- */
+const phMic=document.getElementById("phMic"),phHint=document.getElementById("phHint"),phYou={set textContent(v){}};
+const elIn=document.getElementById("elIn"),elSend=document.getElementById("elSend"),elForm=document.getElementById("elForm");
+let dict=null,heard="",micOn=false;
+function showType(on){elForm.hidden=!on;document.getElementById("elodie").classList.toggle("typing",on);document.getElementById("phAlt").hidden=on;if(on)elIn.focus({preventScroll:true})}
+function micUI(state){
+  micOn=state==="listening"||state==="starting";
+  phMic.classList.toggle("on",micOn);phMic.classList.toggle("busy",state==="busy");
+  phMic.setAttribute("aria-label",micOn?"Stop met praten":"Praat met Élodie");
+  phHint.textContent=document.getElementById("elAsk").hidden?"Tik op Begin om te starten":state==="busy"?"Élodie zoekt…":micOn?"Ik luister… tik op de microfoon als je klaar bent":dict?"":"Tik op het microfoontje van je toetsenbord en spreek";
+}
+dictP.then(d=>{
+  dict=d;
+  if(!d){micUI("idle");return}
+  d.onPartial(({text})=>{const t=(heard+" "+text).trim();phYou.textContent=t?"Jij: "+t:"";setPresence({zegt:t})});
+  d.onFinal(({text})=>{heard=(heard+text).trim()+" ";phYou.textContent="Jij: "+heard.trim()});
+  d.onState(({state,reason})=>{
+    micUI(state);setPresence({status:state==="listening"?"luistert":"klaar"});
+    if(state==="idle"){
+      const q=heard.trim();heard="";
+      if(q)elAsk(q);
+      else if(reason==="not_granted"||reason==="unavailable"){dict=null;micUI("idle");showType(true)}
+    }
+  });
+  micUI("idle");
+});
+phMic.addEventListener("click",()=>{
+  if(phMic.classList.contains("busy"))return;
+  if(!dict){showType(true);return}
+  if(micOn){dict.stop().catch(()=>{});return}
+  heard="";phYou.textContent="";elRun++;elAudio.pause();elStopBob();
+  dict.start().catch(e=>{if(e&&(e.code==="not_granted"||e.code==="unavailable")){dict=null;micUI("idle");showType(true)}});
+});
+document.getElementById("phAlt").addEventListener("click",()=>showType(true));
+
+document.getElementById("elStart").addEventListener("click",async e=>{
+  e.currentTarget.hidden=true;document.getElementById("elAsk").hidden=false;micUI("idle");
+  elStarted=true;try{sessionStorage.setItem("mis-gesprek","1")}catch(_){}
+  setPresence({status:"klaar"});
+  await elSpeak(EL_LINES.z1,"hey","z1");
+  await elSpeak(EL_LINES.z2,"kijken","z2");
+  await elSpeak(EL_LINES.z3,"praten","z3");
+});
+elForm.addEventListener("submit",e=>{e.preventDefault();elAsk(elIn.value)});
+
+/* ---------- koppeling telefoon <-> groot scherm (via een gedeelde kamer) ---------- */
+function setPresence(patch){if(pair)pair.presence(patch).catch(()=>{})}
+const linkEl=document.getElementById("phLink");
+function phoneSeesDesk(peers){
+  const d=peers.filter(p=>!p.sameTab&&p.presence&&p.presence.rol==="scherm"&&(!PAIR||p.presence.code===PAIR)).sort((a,b)=>b.updatedAt-a.updatedAt)[0];
+  deskHere=!!d;phoneDiag(deskHere?"ok":"zoekt");
+  const sc=d&&typeof d.presence.scherm==="string"?d.presence.scherm:"";
+  if(sc!==deskScherm){deskScherm=sc;
+    const m=sc.match(/^#?(stuk|meten)-(\d\d)$/);
+    if(m&&elStarted&&!phoneSaid.has(sc)){phoneSaid.add(sc);
+      setTimeout(()=>{if(deskScherm===sc)elSpeak(m[1]==="stuk"?EL_LINES.z5:EL_LINES.z6,m[1]==="stuk"?"praten":"hey",m[1]==="stuk"?"z5":"z6")},m[1]==="stuk"?900:400)}
+  }
+}
+const qrStatus=document.getElementById("qrStatus");
+let seenVondst=null,deskStart=0;
+function deskSeesPhone(peers,first){
+  const ph=peers.filter(p=>!p.sameTab&&p.presence&&p.presence.rol==="telefoon"&&(!p.presence.code||p.presence.code===DESK_CODE)).sort((a,b)=>b.updatedAt-a.updatedAt)[0];
+  qrStatus.hidden=false;
+  if(!ph){qrStatus.textContent="Nog geen telefoon verbonden.";qrStatus.className="qrstatus";return}
+  const zegt=typeof ph.presence.zegt==="string"?ph.presence.zegt.slice(0,200):"";
+  const el=typeof ph.presence.elodie==="string"?ph.presence.elodie.slice(0,300):"";
+  const st=ph.presence.status;
+  qrStatus.className="qrstatus on";
+  qrStatus.innerHTML=`<b>${st==="luistert"?"Élodie luistert…":st==="denkt"?"Élodie zoekt in de dozen…":"Telefoon verbonden"}</b>`
+    +(zegt?`<span class="qs-me">Jij: “${esc(zegt)}”</span>`:"")+(el?`<span class="qs-el">Élodie: ${esc(el)}</span>`:"");
+  const v=ph.presence.vondst;
+  if(v&&typeof v.n==="number"&&Array.isArray(v.ids)){
+    if(seenVondst===null&&first){seenVondst=v.n;return}
+    if(v.n!==seenVondst&&v.n!==(seenVondst||0)){
+      seenVondst=v.n;
+      const ids=v.ids.map(String).filter(id=>BY_ID[id]).slice(0,6);
+      if(ids.length){lastFind={q:String(v.q||"").slice(0,200),titel:String(v.titel||"Voor jou gevonden").slice(0,60),ids,antwoord:String(v.antwoord||"").slice(0,300)};
+        try{sessionStorage.setItem("mis-vondst",JSON.stringify(lastFind))}catch(e){}
+        if(location.hash==="#resultaten")route();else go("resultaten")}
+    }
+  }
+}
+const DESK_CODE=(()=>{const a="abcdefghjkmnpqrstuvwxyz23456789";let c="";for(let i=0;i<5;i++)c+=a[Math.floor(Math.random()*a.length)];return c})();
+/* De koppeling loopt via de gedeelde kamer van dit artifact: elk toestel zet zijn rol en de koppelcode in zijn "presence". */
+function phoneDiag(st,extra){
+  if(ROLE!=="telefoon")return;
+  linkEl.hidden=false;linkEl.classList.toggle("bad",st!=="ok");
+  linkEl.textContent=st==="ok"?"Verbonden":st==="zoekt"?"Zoekt het grote scherm…":st==="geen"?(IN_CLAUDE?"Geen verbinding: open deze pagina terwijl je bij Claude bent ingelogd":"Geen verbinding met het grote scherm. Scan de code opnieuw."):"Geen verbinding ("+(extra||"onbekend")+")";
+}
+function deskDiag(text){qrStatus.hidden=false;qrStatus.className="qrstatus";qrStatus.textContent=text}
+if(ROLE==="scherm"){
+  const phoneUrl=ELODIE_BASE+"elodie-"+DESK_CODE;
+  drawQR(phoneUrl);document.getElementById("qrTest").href=phoneUrl;
+  roomP.then(async r=>{
+    if(!r){deskDiag(IN_CLAUDE?"Dit scherm kan geen telefoon koppelen. Open deze pagina terwijl je bij Claude bent ingelogd.":"Dit scherm kan geen telefoon koppelen. Controleer de internetverbinding en herlaad de pagina.");return}
+    pair=r;
+    try{await r.presence({rol:"scherm",code:DESK_CODE,scherm:location.hash||"#start"})}catch(e){deskDiag("Dit scherm kan geen telefoon koppelen ("+(e&&e.code||"fout")+").");return}
+    addEventListener("hashchange",()=>setPresence({scherm:location.hash||"#start"}));
+    let first=true;
+    r.onPeers(ch=>{deskSeesPhone(ch.peers,first);first=false},e=>deskDiag("Verbinding verbroken ("+(e&&e.code||"fout")+"). Herlaad de pagina."));
+  });
+}else{
+  phoneDiag("zoekt");
+  roomP.then(async r=>{
+    if(!r){phoneDiag("geen");return}
+    pair=r;
+    try{await r.presence({rol:"telefoon",code:PAIR||"",status:elStarted?"klaar":"wacht"})}catch(e){phoneDiag("fout",e&&e.code);return}
+    r.onPeers(ch=>phoneSeesDesk(ch.peers),e=>phoneDiag("fout",e&&e.code));
+  });
+}
+
+/* zoeken: eerst Claude (als dat kan op dit toestel), anders een eigen zoeker op trefwoorden */
+const elHistory=[];
+const CATALOG=ITEMS.map(it=>`${it.id} | ${it.title} | ${it.tags.join(", ")} | ${it.delen} | ${it.desc}`).join("\n");
+const EL_RULES=`Je bent Élodie, de persoonlijke naaister van MoMu, het ModeMuseum in Antwerpen: een warme, wat theatrale oudere Française die Nederlands spreekt met af en toe een Frans woordje (chérie, voilà, magnifique). Een bezoeker zegt op haar telefoon wat voor kledingstuk ze zoekt of wil maken. Kies uit de catalogus hieronder de stukken die het best passen: hoogstens 6, de beste eerst, alleen id's uit de lijst.
+
+Antwoord met alleen JSON in deze vorm: {"antwoord": "...", "titel": "...", "ids": ["31", "11"]}
+- antwoord: 1 à 2 korte zinnen in Élodies stem, hoogstens 35 woorden, zonder de titels op te sommen.
+- titel: 2 à 4 woorden die samenvatten wat de bezoeker zoekt, bijvoorbeeld "Jassen met knopen".
+- Is de vraag te vaag of past er niets: laat ids leeg en stel in antwoord één vriendelijke wedervraag.
+- Gaat de vraag niet over kleding: laat ids leeg en breng het gesprek vriendelijk terug naar de collectie.
+
+Catalogus (id | titel | kenmerken | onderdelen | beschrijving):
+${CATALOG}`;
+const SYN=[[/^(jas|jasje|jassen|vest|mantel|cape|jack|jak|uniform|blazer|manteltje)/,["jassen"]],[/^(jurk|kleed|japon)/,["jurken"]],[/^(muts|hoed|baret|pet|kap)/,["hoeden"]],[/^(broek|short)/,["broeken"]],[/^(schoen|laars|laarsje)/,["schoenen"]],[/^(tas|handtas)/,["tassen"]],[/^(bloes|blouse|hemd|top|lijfje)/,["bloezen"]],[/^(trui|pull|col)/,["truien"]],[/^(schort)/,["schorten"]],[/^(slip|onderbroek|ondergoed)/,["ondergoed"]],[/^(sieraad|broche|juweel)/,["sieraden"]],[/^(borduur|kruissteek|steek)/,["borduursel"]],[/^(knoop|knopen|knoopje)/,["knopen"]],[/^(kant|kantje|ruche)/,["kant"]],[/^(rits)/,["rits"]],[/^(streep|gestreept)/,["strepen"]],[/^(ruit|geruit|ruitje|dambord)/,["ruit"]],[/^(bloem|bloemetje|bloemen|roos|roosje)/,["bloemen"]],[/^(franje|kwast|pompon)/,["franjes"]],[/^(golf|golvend|krul|geschulpt)/,["golvend"]],[/^(hoek|hoekig|geometrisch|zigzag|vierkant)/,["hoekig"]],[/^(rond|cirkel|bol)/,["rond"]]];
+const fold=t=>t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const STOP=new Set(["een","de","het","met","en","iets","ik","zoek","wil","graag","van","voor","op","in","mij","me","je","dat","die","wat","is","of","maken","heb","heeft"]);
+function localFind(q){
+  const words=fold(q).split(/[^a-z0-9]+/).filter(w=>w.length>2&&!STOP.has(w));
+  const tags=new Set();words.forEach(w=>SYN.forEach(([re,t])=>{if(re.test(w))t.forEach(x=>tags.add(x))}));
+  const scored=ITEMS.map(it=>{const title=fold(it.title),rest=fold(it.desc+" "+it.delen);let sc=0;
+    it.tags.forEach(t=>{if(tags.has(t))sc+=3});
+    words.forEach(w=>{const stem=w.replace(/(en|s|je|tje)$/,"");if(stem.length<3)return;if(title.includes(stem))sc+=2;else if(rest.includes(stem))sc+=1});
+    return [it.id,sc]}).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(x=>x[0]);
+  const KIND=["jassen","jurken","hoeden","broeken","schoenen","tassen","bloezen","truien","schorten","ondergoed","sieraden"];
+  const kind=KIND.find(k=>tags.has(k)),det=[...tags].filter(t=>!KIND.includes(t)).slice(0,2);
+  const titel=kind?(kind==="hoeden"?"Mutsen en hoeden":kind)+(det.length?" met "+det.join(" en "):""):det.length?"Stukken met "+det.join(" en "):"Voor jou gevonden";
+  return scored.length
+    ?{ids:scored,titel:titel.charAt(0).toUpperCase()+titel.slice(1),antwoord:"Voilà, kijk eens wat ik in de dozen vond! Tik op een foto om het stuk van dichtbij te zien."}
+    :{ids:[],titel:"",antwoord:"Hmm, daarvan vind ik niets in de dozen, chérie. Zoek je een jas, een jurk, een muts? Of iets met borduursel of knopen?"};
+}
+async function elFind(q){
+  if(!aiOff){
+    const sample=await samplePromise;
+    if(sample){
+      try{
+        const turns=[{role:"user",content:EL_RULES},...elHistory.slice(-6),{role:"user",content:q}];
+        const r=await sample.json(turns,{modelTier:"quick",cache:false});
+        const ids=(Array.isArray(r&&r.ids)?r.ids:[]).map(String).filter(id=>BY_ID[id]).slice(0,6);
+        if(r&&typeof r.antwoord==="string"&&r.antwoord.trim()){
+          elHistory.push({role:"user",content:q},{role:"assistant",content:JSON.stringify({antwoord:r.antwoord,titel:r.titel||"",ids})});
+          return {ids,titel:String(r.titel||"").trim()||q,antwoord:r.antwoord.trim()};
+        }
+      }catch(e){if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e&&e.code))aiOff=true}
+    }
+  }
+  return localFind(q);
+}
+async function elAsk(q){
+  q=(q||"").trim();if(!q||elBusy)return;
+  elBusy=true;elSend.disabled=true;elIn.value="";micUI("busy");
+  document.getElementById("elStart").hidden=true;document.getElementById("elAsk").hidden=false;
+
+  setPresence({status:"denkt",zegt:q});
+  elSpeak("Hmm… laat me even in de dozen kijken.","kijken");
+  const r=await elFind(q);
+  if(r.ids.length){
+    lastFind={q,titel:r.titel,ids:r.ids,antwoord:r.antwoord};
+    try{sessionStorage.setItem("mis-vondst",JSON.stringify(lastFind))}catch(e){}
+    setPresence({status:"klaar",zegt:null,vondst:{n:Date.now(),q:q.slice(0,200),titel:r.titel.slice(0,60),ids:r.ids,antwoord:r.antwoord.slice(0,300)}});
+    await elSpeak(EL_LINES.z4,"gevonden","z4");
+    elSpeak(deskHere?"Kijk maar op het grote scherm, chérie. Tik daar op het stuk dat je wilt maken.":"Oh là là, ik vind het grote scherm niet, chérie. Scan de code op het scherm nog eens.","praten");
+  }else{
+    setPresence({status:"klaar",zegt:null});
+    elSpeak(r.antwoord,"praten");
+  }
+  elBusy=false;elSend.disabled=false;micUI("idle");
+}
+
+route();
+</script>
+</body>
+</html>
